@@ -1,0 +1,616 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>seobkim · Local Admin</title>
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --surface: #ffffff;
+      --surface-soft: #f8fafc;
+      --border: #dde3eb;
+      --border-strong: #c7d0dc;
+      --text: #172033;
+      --text-soft: #596579;
+      --text-faint: #8792a3;
+      --accent: #315ecb;
+      --accent-soft: #edf3ff;
+      --green: #17885b;
+      --green-soft: #eaf8f2;
+      --amber: #a66a11;
+      --amber-soft: #fff6e5;
+      --red: #bd3b4b;
+      --shadow: 0 14px 34px rgba(30, 45, 67, .08);
+      --sidebar: 236px;
+      --header: 64px;
+    }
+    :root[data-theme="dark"] {
+      --bg: #0e1218;
+      --surface: #151b23;
+      --surface-soft: #1b222c;
+      --border: #293340;
+      --border-strong: #3b4757;
+      --text: #edf2f7;
+      --text-soft: #acb7c6;
+      --text-faint: #748195;
+      --accent: #80a7ff;
+      --accent-soft: #1c2b4b;
+      --green: #6ed2a7;
+      --green-soft: #17372d;
+      --amber: #efbd67;
+      --amber-soft: #3b2c16;
+      --red: #ff8491;
+      --shadow: 0 16px 38px rgba(0, 0, 0, .28);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #0e1218;
+        --surface: #151b23;
+        --surface-soft: #1b222c;
+        --border: #293340;
+        --border-strong: #3b4757;
+        --text: #edf2f7;
+        --text-soft: #acb7c6;
+        --text-faint: #748195;
+        --accent: #80a7ff;
+        --accent-soft: #1c2b4b;
+        --green: #6ed2a7;
+        --green-soft: #17372d;
+        --amber: #efbd67;
+        --amber-soft: #3b2c16;
+        --red: #ff8491;
+        --shadow: 0 16px 38px rgba(0, 0, 0, .28);
+      }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--text); background: var(--bg); font-family: "Noto Sans KR", "Noto Sans", "Apple SD Gothic Neo", "Segoe UI", sans-serif; font-size: 14px; line-height: 1.6; }
+    button, select { font: inherit; }
+    button, a, select { -webkit-tap-highlight-color: transparent; }
+    a { color: inherit; text-decoration: none; }
+    .topbar { position: fixed; inset: 0 0 auto 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; height: var(--header); padding: 0 22px; background: color-mix(in srgb, var(--surface) 94%, transparent); border-bottom: 1px solid var(--border); backdrop-filter: blur(12px); }
+    .brand { display: flex; align-items: center; gap: 11px; font-weight: 760; }
+    .brand-mark { display: grid; width: 32px; height: 32px; place-items: center; color: #fff; background: #315ecb; border-radius: 9px; font: 700 14px Consolas, monospace; }
+    .local-badge { margin-left: 4px; padding: 3px 7px; color: var(--green); background: var(--green-soft); border-radius: 999px; font-size: 10px; font-weight: 800; letter-spacing: .06em; }
+    .top-actions { display: flex; align-items: center; gap: 9px; }
+    .preview-link, .theme-select { height: 36px; padding: 0 11px; color: var(--text-soft); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; font-size: 12px; }
+    .preview-link { display: inline-flex; align-items: center; }
+    .preview-link:hover { color: var(--accent); border-color: var(--accent); }
+    .app { display: grid; grid-template-columns: var(--sidebar) minmax(0, 1fr); min-height: 100vh; padding-top: var(--header); }
+    .sidebar { position: fixed; top: var(--header); bottom: 0; left: 0; display: flex; width: var(--sidebar); flex-direction: column; padding: 22px 14px 16px; background: var(--surface); border-right: 1px solid var(--border); }
+    .side-label { margin: 0 10px 10px; color: var(--text-faint); font-size: 10px; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; }
+    .nav { display: grid; gap: 4px; }
+    .nav button { display: flex; width: 100%; align-items: center; gap: 11px; min-height: 40px; padding: 7px 10px; color: var(--text-soft); text-align: left; background: transparent; border: 0; border-radius: 8px; cursor: pointer; }
+    .nav button:hover { background: var(--surface-soft); }
+    .nav button.active { color: var(--accent); background: var(--accent-soft); font-weight: 740; }
+    .nav-icon { width: 18px; text-align: center; font: 14px Consolas, monospace; }
+    .local-note { margin-top: auto; padding: 13px; color: var(--text-faint); background: var(--surface-soft); border: 1px solid var(--border); border-radius: 9px; font-size: 11px; }
+    .local-note strong { display: block; margin-bottom: 3px; color: var(--green); }
+    .main { grid-column: 2; width: min(1180px, 100%); padding: 38px 38px 70px; }
+    .page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 22px; margin-bottom: 28px; }
+    .page-head h1 { margin: 0; font-size: 28px; letter-spacing: -.035em; }
+    .page-head p { margin: 7px 0 0; color: var(--text-soft); }
+    .primary { min-height: 40px; padding: 8px 14px; color: #fff; background: #315ecb; border: 1px solid #315ecb; border-radius: 8px; cursor: pointer; font-weight: 700; }
+    .primary:hover { background: #274da8; }
+    .secondary { min-height: 38px; padding: 7px 12px; color: var(--text); background: var(--surface); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; }
+    .secondary:hover { border-color: var(--accent); }
+    .panel-view[hidden] { display: none; }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 13px; margin-bottom: 18px; }
+    .stat { padding: 18px; background: var(--surface); border: 1px solid var(--border); border-radius: 11px; }
+    .stat span { color: var(--text-faint); font-size: 11px; font-weight: 720; letter-spacing: .06em; text-transform: uppercase; }
+    .stat strong { display: block; margin-top: 9px; font-size: 25px; line-height: 1.2; }
+    .stat small { display: block; margin-top: 4px; color: var(--text-soft); }
+    .dashboard-grid { display: grid; grid-template-columns: 1.35fr .85fr; gap: 18px; }
+    .stack { display: grid; gap: 18px; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); }
+    .card-head { display: flex; align-items: center; justify-content: space-between; gap: 18px; min-height: 57px; padding: 0 18px; border-bottom: 1px solid var(--border); }
+    .card-head h2 { margin: 0; font-size: 14px; }
+    .card-head span, .card-head a { color: var(--text-faint); font-size: 11px; }
+    .card-head a:hover { color: var(--accent); }
+    .doc-list { padding: 4px 18px; }
+    .doc-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 16px; align-items: center; min-height: 65px; border-bottom: 1px solid var(--border); }
+    .doc-row:last-child { border-bottom: 0; }
+    .doc-title { min-width: 0; }
+    .doc-title strong, .doc-title small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .doc-title small { margin-top: 2px; color: var(--text-faint); }
+    .status { padding: 4px 8px; border-radius: 999px; font-size: 10px; font-weight: 760; }
+    .status.public { color: var(--green); background: var(--green-soft); }
+    .status.draft { color: var(--amber); background: var(--amber-soft); }
+    .date { color: var(--text-faint); font: 11px Consolas, monospace; }
+    .quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; padding: 16px; }
+    .quick-actions button, .quick-actions a { display: flex; align-items: center; min-height: 54px; padding: 11px; color: var(--text-soft); background: var(--surface-soft); border: 1px solid var(--border); border-radius: 9px; cursor: pointer; }
+    .quick-actions button:hover, .quick-actions a:hover { color: var(--accent); border-color: var(--accent); }
+    .traffic { padding: 18px; }
+    .traffic-bars { display: flex; align-items: end; gap: 8px; height: 106px; padding-top: 9px; }
+    .traffic-bar { position: relative; flex: 1; min-width: 9px; height: var(--value); background: #8dadf2; border-radius: 4px 4px 2px 2px; }
+    .traffic-bar:hover { background: var(--accent); }
+    .traffic-labels { display: flex; justify-content: space-between; margin-top: 9px; color: var(--text-faint); font: 10px Consolas, monospace; }
+    .traffic-note { margin: 14px 0 0; color: var(--text-faint); font-size: 11px; }
+    .analytics-controls { display: flex; align-items: center; gap: 7px; }
+    .analytics-controls select, .analytics-controls button { height: 30px; padding: 0 9px; color: var(--text-soft); background: var(--surface); border: 1px solid var(--border); border-radius: 7px; font-size: 11px; }
+    .analytics-controls button { cursor: pointer; }
+    .analytics-controls button:hover { color: var(--accent); border-color: var(--accent); }
+    .analytics-controls button:disabled { cursor: wait; opacity: .55; }
+    .analytics-state { min-width: 48px; text-align: right; }
+    .analytics-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; margin-bottom: 15px; }
+    .analytics-summary[hidden], .analytics-table[hidden], .analytics-message[hidden] { display: none; }
+    .analytics-metric { padding: 12px; background: var(--surface-soft); border: 1px solid var(--border); border-radius: 8px; }
+    .analytics-metric span { display: block; color: var(--text-faint); font-size: 10px; font-weight: 760; letter-spacing: .05em; }
+    .analytics-metric strong { display: block; margin-top: 5px; font: 700 18px Consolas, monospace; }
+    .analytics-message { padding: 16px; color: var(--text-soft); background: var(--surface-soft); border: 1px solid var(--border); border-radius: 8px; }
+    .analytics-message strong { display: block; margin-bottom: 4px; color: var(--text); }
+    .analytics-table { overflow: hidden; border: 1px solid var(--border); border-radius: 8px; }
+    .analytics-table th, .analytics-table td { padding: 10px 12px; }
+    .analytics-table td:first-child { max-width: 0; }
+    .analytics-table a { display: block; overflow: hidden; color: var(--text-soft); text-overflow: ellipsis; white-space: nowrap; }
+    .analytics-table a:hover { color: var(--accent); }
+    .analytics-number { width: 88px; text-align: right; font-family: Consolas, "Cascadia Code", monospace; }
+    .check-list { padding: 8px 18px 14px; }
+    .check-item { display: flex; align-items: center; gap: 10px; min-height: 42px; color: var(--text-soft); border-bottom: 1px solid var(--border); }
+    .check-item:last-child { border-bottom: 0; }
+    .check { display: grid; width: 20px; height: 20px; place-items: center; color: var(--green); background: var(--green-soft); border-radius: 50%; font-size: 11px; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 14px 16px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    th { color: var(--text-faint); background: var(--surface-soft); font-size: 11px; }
+    td:first-child { width: 100%; white-space: normal; }
+    .empty { display: grid; min-height: 300px; place-items: center; padding: 32px; color: var(--text-soft); text-align: center; }
+    .empty.compact { min-height: 130px; }
+    .empty strong { display: block; margin-bottom: 5px; color: var(--text); }
+    .settings-list { padding: 6px 18px; }
+    .setting { display: grid; grid-template-columns: 180px 1fr; gap: 20px; padding: 18px 0; border-bottom: 1px solid var(--border); }
+    .setting:last-child { border-bottom: 0; }
+    .setting strong { font-size: 12px; }
+    .setting p { margin: 0; color: var(--text-soft); }
+    .code { font-family: Consolas, "Cascadia Code", monospace; }
+    .toast { position: fixed; right: 24px; bottom: 24px; z-index: 50; max-width: 360px; padding: 12px 15px; color: var(--text); background: var(--surface); border: 1px solid var(--border-strong); border-radius: 9px; box-shadow: var(--shadow); opacity: 0; pointer-events: none; transform: translateY(10px); transition: .2s ease; }
+    .toast.visible { opacity: 1; transform: translateY(0); }
+    @media (max-width: 900px) {
+      :root { --sidebar: 76px; }
+      .sidebar { padding-inline: 10px; }
+      .side-label, .nav button span:last-child, .local-note { display: none; }
+      .nav button { justify-content: center; }
+      .main { padding-inline: 22px; }
+      .stats { grid-template-columns: 1fr 1fr; }
+      .dashboard-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 620px) {
+      :root { --header: 58px; }
+      .topbar { padding-inline: 14px; }
+      .brand span:nth-child(2), .local-badge, .preview-link { display: none; }
+      .app { display: block; padding-bottom: 64px; }
+      .sidebar { top: auto; right: 0; bottom: 0; z-index: 30; width: 100%; height: 64px; padding: 7px 8px; border-top: 1px solid var(--border); border-right: 0; }
+      .side-label, .local-note { display: none; }
+      .nav { grid-template-columns: repeat(5, 1fr); }
+      .nav button { min-height: 48px; padding: 5px; }
+      .main { width: 100%; padding: 26px 16px 50px; }
+      .page-head { display: block; }
+      .page-head .primary { margin-top: 16px; }
+      .stats { grid-template-columns: 1fr 1fr; }
+      .stat { padding: 15px; }
+      .stat strong { font-size: 22px; }
+      .doc-row { grid-template-columns: minmax(0, 1fr) auto; }
+      .date { display: none; }
+      .setting { grid-template-columns: 1fr; gap: 6px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">S</span>
+      <span>seobkim admin</span>
+      <span class="local-badge">LOCAL ONLY</span>
+    </div>
+    <div class="top-actions">
+      <a class="preview-link" href="/" target="_blank">공개 사이트 미리보기 ↗</a>
+      <select class="theme-select" id="theme-select" aria-label="색상 모드">
+        <option value="system">시스템</option>
+        <option value="light">라이트</option>
+        <option value="dark">다크</option>
+      </select>
+    </div>
+  </header>
+
+  <div class="app">
+    <aside class="sidebar">
+      <p class="side-label">Workspace</p>
+      <nav class="nav" aria-label="관리자 메뉴">
+        <button class="active" type="button" data-panel-target="dashboard"><span class="nav-icon">⌂</span><span>대시보드</span></button>
+        <button type="button" data-panel-target="documents"><span class="nav-icon">▤</span><span>문서</span></button>
+        <button type="button" data-panel-target="media"><span class="nav-icon">▧</span><span>이미지</span></button>
+        <button type="button" data-panel-target="publish"><span class="nav-icon">↑</span><span>발행</span></button>
+        <button type="button" data-panel-target="settings"><span class="nav-icon">⚙</span><span>설정</span></button>
+      </nav>
+      <div class="local-note">
+        <strong>이 PC에서만 접속</strong>
+        127.0.0.1에만 연결된 로컬 관리 도구입니다.
+      </div>
+    </aside>
+
+    <main class="main">
+      <section class="panel-view" data-panel="dashboard">
+        <div class="page-head">
+          <div>
+            <h1>관리자 대시보드</h1>
+            <p>문서 상태를 확인하고 공개 전에 미리보기와 발행 항목을 점검합니다.</p>
+          </div>
+          <a class="primary" href="/" target="_blank" rel="noreferrer">사이트 미리보기 ↗</a>
+        </div>
+
+        <div class="stats">
+          <article class="stat"><span>공개 문서</span><strong id="published-count">—</strong><small>배포 대상</small></article>
+          <article class="stat"><span>작성 중</span><strong id="draft-count">—</strong><small>로컬 미리보기 전용</small></article>
+          <article class="stat"><span>전체 문서</span><strong id="total-count">—</strong><small id="build-time">빌드 확인 중</small></article>
+          <article class="stat"><span>페이지 조회</span><strong class="code" id="analytics-total">—</strong><small id="analytics-period">통계 확인 중</small></article>
+        </div>
+
+        <div class="dashboard-grid">
+          <div class="stack">
+            <section class="card">
+              <div class="card-head"><h2>최근 문서</h2><button class="secondary" type="button" data-panel-jump="documents">전체 보기</button></div>
+              <div class="doc-list" id="recent-documents"></div>
+            </section>
+
+            <section class="card">
+              <div class="card-head">
+                <h2>페이지별 조회수</h2>
+                <div class="analytics-controls">
+                  <select id="analytics-days" aria-label="통계 기간">
+                    <option value="7">7일</option>
+                    <option value="30" selected>30일</option>
+                    <option value="90">90일</option>
+                  </select>
+                  <button type="button" id="analytics-refresh">새로고침</button>
+                  <span class="analytics-state" id="analytics-state">확인 중</span>
+                </div>
+              </div>
+              <div class="traffic">
+                <div class="analytics-summary" id="analytics-summary" hidden>
+                  <div class="analytics-metric"><span>페이지 조회</span><strong id="analytics-pageviews">—</strong></div>
+                  <div class="analytics-metric"><span>방문 시작</span><strong id="analytics-visits">—</strong></div>
+                  <div class="analytics-metric"><span>조회된 경로</span><strong id="analytics-paths">—</strong></div>
+                </div>
+                <div class="analytics-message" id="analytics-message">
+                  <strong>Cloudflare 연결 전</strong>
+                  배포 후 로컬 연결 정보를 설정하면 경로별 조회수가 여기에 표시됩니다.
+                </div>
+                <div class="analytics-table table-wrap" id="analytics-table-wrap" hidden>
+                  <table>
+                    <thead><tr><th>페이지 경로</th><th class="analytics-number">조회수</th><th class="analytics-number">방문 시작</th></tr></thead>
+                    <tbody id="analytics-table"></tbody>
+                  </table>
+                </div>
+                <p class="traffic-note" id="analytics-note">API 토큰은 로컬 개발 서버에서만 사용하며 브라우저와 공개 빌드에는 포함하지 않습니다.</p>
+              </div>
+            </section>
+          </div>
+
+          <div class="stack">
+            <section class="card">
+              <div class="card-head"><h2>빠른 작업</h2><span>LOCAL</span></div>
+              <div class="quick-actions">
+                <a href="/" target="_blank" rel="noreferrer">□ 사이트 미리보기</a>
+                <a href="/docs/" target="_blank" rel="noreferrer">▤ 전체 문서 보기</a>
+                <a href="/seobkim/" target="_blank" rel="noreferrer">◇ 이력서 URL 보기</a>
+                <button type="button" data-panel-jump="publish">↑ 발행 상태 확인</button>
+              </div>
+            </section>
+
+            <section class="card">
+              <div class="card-head"><h2>발행 준비</h2><span id="release-summary">확인 중</span></div>
+              <div class="check-list" id="release-check-list"></div>
+            </section>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel-view" data-panel="documents" hidden>
+        <div class="page-head">
+          <div><h1>문서</h1><p>Obsidian 문서의 공개 상태와 경로를 확인합니다.</p></div>
+          <a class="primary" href="/" target="_blank" rel="noreferrer">사이트 미리보기 ↗</a>
+        </div>
+        <section class="card table-wrap">
+          <table>
+            <thead><tr><th>문서</th><th>경로</th><th>상태</th><th>수정일</th></tr></thead>
+            <tbody id="documents-table"></tbody>
+          </table>
+        </section>
+      </section>
+
+      <section class="panel-view" data-panel="media" hidden>
+        <div class="page-head"><div><h1>이미지</h1><p>Obsidian 첨부 폴더에 있는 이미지 파일을 확인합니다.</p></div></div>
+        <section class="card">
+          <div class="card-head"><h2>첨부 이미지</h2><span id="media-summary">확인 중</span></div>
+          <div class="check-list" id="media-list"></div>
+        </section>
+      </section>
+
+      <section class="panel-view" data-panel="publish" hidden>
+        <div class="page-head"><div><h1>발행</h1><p>SourceTree에서 커밋하기 전에 실제 Git 상태와 빌드 결과를 확인합니다.</p></div></div>
+        <div class="dashboard-grid">
+          <section class="card">
+            <div class="card-head"><h2>Git 변경 파일</h2><span id="git-summary">확인 중</span></div>
+            <div class="check-list" id="git-files"></div>
+          </section>
+          <section class="card">
+            <div class="card-head"><h2>권장 흐름</h2><span>SourceTree</span></div>
+            <div class="check-list">
+              <div class="check-item"><span class="check">1</span>로컬 미리보기와 발행 검사</div>
+              <div class="check-item"><span class="check">2</span>SourceTree에서 변경 파일 확인</div>
+              <div class="check-item"><span class="check">3</span>main 브랜치로 커밋·Push</div>
+              <div class="check-item"><span class="check">4</span>Pages 자동 배포 확인</div>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="panel-view" data-panel="settings" hidden>
+        <div class="page-head"><div><h1>설정</h1><p>공개 사이트와 로컬 관리 도구의 경계를 확인합니다.</p></div></div>
+        <section class="card settings-list">
+          <div class="setting"><strong>관리자 접속</strong><p><span class="code">127.0.0.1</span>에만 연결합니다. 외부 인터넷과 같은 네트워크의 다른 기기에서는 접속할 수 없습니다.</p></div>
+          <div class="setting"><strong>공개 배포</strong><p>GitHub Pages에는 생성된 공개 사이트 파일만 올리고, 이 관리자 폴더는 빌드와 저장소 배포 대상에서 제외합니다.</p></div>
+          <div class="setting"><strong>문서 편집</strong><p>Obsidian에서 작성합니다. 관리자 화면은 상태 확인과 발행 점검을 담당합니다.</p></div>
+          <div class="setting"><strong>Cloudflare 통계</strong><p><span class="code">.env.local</span>의 읽기 전용 API 설정으로 Site Tag를 찾고 페이지별 조회수를 가져옵니다. 토큰과 계정 ID는 Git에 커밋하지 않습니다.</p></div>
+          <div class="setting"><strong>외부 관리자</strong><p>나중에 밖에서도 접속해야 한다면 별도 도메인과 인증 계층을 추가합니다.</p></div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const root = document.documentElement;
+    const themeSelect = document.getElementById("theme-select");
+    const savedTheme = localStorage.getItem("seobkim-admin-theme") || "system";
+
+    function setTheme(theme) {
+      root.removeAttribute("data-theme");
+      if (theme !== "system") root.dataset.theme = theme;
+      themeSelect.value = theme;
+      localStorage.setItem("seobkim-admin-theme", theme);
+    }
+
+    function showPanel(name) {
+      document.querySelectorAll("[data-panel]").forEach(panel => {
+        panel.hidden = panel.dataset.panel !== name;
+      });
+      document.querySelectorAll("[data-panel-target]").forEach(button => {
+        button.classList.toggle("active", button.dataset.panelTarget === name);
+      });
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    const toast = document.getElementById("toast");
+    let toastTimer;
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("visible");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove("visible"), 2600);
+    }
+
+    setTheme(savedTheme);
+    themeSelect.addEventListener("change", event => setTheme(event.target.value));
+
+    document.querySelectorAll("[data-panel-target]").forEach(button => {
+      button.addEventListener("click", () => showPanel(button.dataset.panelTarget));
+    });
+    document.querySelectorAll("[data-panel-jump]").forEach(button => {
+      button.addEventListener("click", () => showPanel(button.dataset.panelJump));
+    });
+
+  </script>
+  <script>
+    function adminEscape(value) {
+      return String(value || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+    }
+
+    function documentRow(document, compact) {
+      const statusClass = document.draft ? "draft" : "public";
+      const statusLabel = document.draft ? "초안" : "공개";
+      const date = document.updated || document.date || "—";
+
+      if (compact) {
+        return (
+          '<div class="doc-row">' +
+            '<div class="doc-title"><strong>' + adminEscape(document.title) + '</strong><small>' + adminEscape(document.category) + '</small></div>' +
+            '<span class="status ' + statusClass + '">' + statusLabel + '</span>' +
+            '<span class="date">' + adminEscape(date.slice(5)) + '</span>' +
+          '</div>'
+        );
+      }
+
+      return (
+        '<tr>' +
+          '<td><a href="' + adminEscape(document.url) + '" target="_blank">' + adminEscape(document.title) + '</a></td>' +
+          '<td class="code">' + adminEscape(document.source) + '</td>' +
+          '<td><span class="status ' + statusClass + '">' + statusLabel + '</span></td>' +
+          '<td>' + adminEscape(date) + '</td>' +
+        '</tr>'
+      );
+    }
+
+    function formatMetric(value) {
+      return new Intl.NumberFormat("ko-KR").format(Number(value) || 0);
+    }
+
+    function renderAnalytics(data) {
+      const total = document.getElementById("analytics-total");
+      const period = document.getElementById("analytics-period");
+      const state = document.getElementById("analytics-state");
+      const summary = document.getElementById("analytics-summary");
+      const message = document.getElementById("analytics-message");
+      const tableWrap = document.getElementById("analytics-table-wrap");
+      const note = document.getElementById("analytics-note");
+
+      if (data.status === "unconfigured") {
+        total.textContent = "OFF";
+        period.textContent = "Cloudflare 연결 전";
+        state.textContent = "설정 필요";
+        summary.hidden = true;
+        tableWrap.hidden = true;
+        message.hidden = false;
+        message.innerHTML =
+          "<strong>Cloudflare 연결 전</strong>" +
+          "배포와 Web Analytics 등록 후 <span class=\"code\">.env.local</span>에 " +
+          adminEscape(data.missing.join(", ")) + " 값을 설정하면 활성화됩니다.";
+        note.textContent = "API 토큰은 로컬 개발 서버에서만 사용하며 브라우저와 공개 빌드에는 포함하지 않습니다.";
+        return;
+      }
+
+      if (data.status === "error") {
+        total.textContent = "ERR";
+        period.textContent = "통계 조회 실패";
+        state.textContent = "ERROR";
+        summary.hidden = true;
+        tableWrap.hidden = true;
+        message.hidden = false;
+        message.innerHTML = "<strong>Cloudflare 응답 오류</strong>" + adminEscape(data.error);
+        note.textContent = "계정 ID와 Account Analytics Read·Account Settings Read 권한을 확인하세요.";
+        return;
+      }
+
+      total.textContent = formatMetric(data.totalPageViews);
+      period.textContent = "최근 " + data.days + "일";
+      state.textContent = data.cached ? "CACHED" : "LIVE";
+      summary.hidden = false;
+      document.getElementById("analytics-pageviews").textContent = formatMetric(data.totalPageViews);
+      document.getElementById("analytics-visits").textContent = formatMetric(data.totalVisits);
+      document.getElementById("analytics-paths").textContent = formatMetric(data.pages.length);
+
+      if (!data.pages.length) {
+        tableWrap.hidden = true;
+        message.hidden = false;
+        message.innerHTML = "<strong>수집된 조회가 없습니다.</strong>선택한 기간에 기록된 페이지 조회가 아직 없습니다.";
+      } else {
+        message.hidden = true;
+        tableWrap.hidden = false;
+        document.getElementById("analytics-table").innerHTML = data.pages.map(item => {
+          const publicUrl = "https://" + data.host + item.path;
+          return (
+            "<tr>" +
+              '<td><a href="' + adminEscape(publicUrl) + '" target="_blank" rel="noreferrer">' + adminEscape(item.path) + "</a></td>" +
+              '<td class="analytics-number">' + formatMetric(item.pageViews) + "</td>" +
+              '<td class="analytics-number">' + formatMetric(item.visits) + "</td>" +
+            "</tr>"
+          );
+        }).join("");
+      }
+
+      note.textContent =
+        data.host + " · " + new Date(data.fetchedAt).toLocaleString("ko-KR") +
+        " 조회 · 최대 5분간 로컬 캐시";
+    }
+
+    async function loadAnalytics(force = false) {
+      const refresh = document.getElementById("analytics-refresh");
+      const days = document.getElementById("analytics-days").value;
+      const state = document.getElementById("analytics-state");
+      refresh.disabled = true;
+      state.textContent = "LOADING";
+
+      try {
+        const response = await fetch(
+          "/__admin/api/analytics?days=" + encodeURIComponent(days) + (force ? "&refresh=1" : ""),
+          { cache: "no-store" }
+        );
+        const data = await response.json();
+        renderAnalytics(data);
+      } catch (error) {
+        renderAnalytics({ status: "error", error: error.message });
+      } finally {
+        refresh.disabled = false;
+      }
+    }
+
+    document.getElementById("analytics-days").addEventListener("change", () => loadAnalytics());
+    document.getElementById("analytics-refresh").addEventListener("click", () => loadAnalytics(true));
+    async function loadAdminStatus() {
+      try {
+        const response = await fetch("/__admin/api/status", { cache: "no-store" });
+        if (!response.ok) throw new Error("관리자 데이터를 불러오지 못했습니다.");
+        const data = await response.json();
+        const manifest = data.manifest;
+        const documents = [...manifest.documents].sort((a, b) => {
+          const aDate = a.updated || a.date || "";
+          const bDate = b.updated || b.date || "";
+          return bDate.localeCompare(aDate);
+        });
+
+        document.getElementById("published-count").textContent = manifest.counts.published;
+        document.getElementById("draft-count").textContent = manifest.counts.drafts;
+        document.getElementById("total-count").textContent = manifest.counts.total;
+        document.getElementById("build-time").textContent = new Date(manifest.generatedAt).toLocaleTimeString("ko-KR") + " 빌드";
+
+        const recent = document.getElementById("recent-documents");
+        recent.innerHTML = documents.length
+          ? documents.slice(0, 4).map(item => documentRow(item, true)).join("")
+          : '<div class="empty compact"><div><strong>아직 문서가 없습니다.</strong>Obsidian에서 첫 Markdown 파일을 만들면 여기에 표시됩니다.</div></div>';
+
+        const table = document.getElementById("documents-table");
+        table.innerHTML = documents.length
+          ? documents.map(item => documentRow(item, false)).join("")
+          : '<tr><td colspan="4">아직 작성된 문서가 없습니다.</td></tr>';
+
+        const warnings = data.report.warnings || [];
+        const releaseSummary = document.getElementById("release-summary");
+        releaseSummary.textContent = !data.git.available
+          ? "SETUP"
+          : manifest.counts.published === 0
+            ? "EMPTY"
+            : (warnings.length ? warnings.length + " WARNINGS" : "READY");
+        const releaseItems = [
+          { ok: true, text: "사이트 빌드 완료" },
+          { ok: warnings.length === 0, text: warnings.length ? "빌드 경고 " + warnings.length + "건" : "빌드 경고 없음" },
+          { ok: manifest.counts.published > 0, text: "공개 문서 " + manifest.counts.published + "개" },
+          { ok: data.git.available, text: data.git.available ? "Git 저장소 연결됨" : "Git 저장소 생성 전" }
+        ];
+        document.getElementById("release-check-list").innerHTML = releaseItems.map(item =>
+          '<div class="check-item"><span class="check">' + (item.ok ? "✓" : "·") + '</span>' + adminEscape(item.text) + '</div>'
+        ).join("");
+
+        const media = data.media || [];
+        document.getElementById("media-summary").textContent = media.length + " FILES";
+        document.getElementById("media-list").innerHTML = media.length
+          ? media.map(item =>
+              '<div class="check-item"><span class="check">▧</span><span class="code">' +
+              adminEscape(item.path) + '</span>&nbsp; ' + Math.max(1, Math.ceil(item.bytes / 1024)) + ' KB</div>'
+            ).join("")
+          : '<div class="check-item"><span class="check">·</span>첨부 이미지가 없습니다.</div>';
+
+        const git = data.git || { available: false, clean: false, files: [] };
+        document.getElementById("git-summary").textContent = git.available
+          ? (git.clean ? "CLEAN" : git.files.length + " FILES")
+          : "NOT INITIALIZED";
+        document.getElementById("git-files").innerHTML = !git.available
+          ? '<div class="check-item"><span class="check">·</span>아직 Git 저장소가 생성되지 않았습니다.</div>'
+          : git.clean
+            ? '<div class="check-item"><span class="check">✓</span>변경 파일이 없습니다.</div>'
+            : git.files.map(item =>
+                '<div class="check-item"><span class="check">' + adminEscape(item.status) + '</span><span class="code">' +
+                adminEscape(item.path) + '</span></div>'
+              ).join("");
+      } catch (error) {
+        showToast(error.message);
+      }
+    }
+
+    loadAdminStatus();
+    loadAnalytics();
+
+    if ("EventSource" in window) {
+      const adminEvents = new EventSource("/__events");
+      adminEvents.addEventListener("message", event => {
+        if (event.data === "reload") location.reload();
+      });
+    }
+  </script>
+</body>
+</html>

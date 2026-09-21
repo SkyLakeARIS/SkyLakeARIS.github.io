@@ -1,0 +1,23 @@
+# Generated dependencies and site output
+node_modules/
+dist/
+
+# Project-local runtime and package cache rebuilt by site.cmd
+.local/
+
+# Local environment and credentials
+.env
+.env.*
+
+# Obsidian local UI state
+content/.obsidian/workspace.json
+content/.obsidian/workspace-mobile.json
+content/.obsidian/cache/
+content/.trash/
+
+# Logs and operating system files
+*.log
+npm-debug.log*
+pnpm-debug.log*
+.DS_Store
+Thumbs.db

@@ -1,0 +1,29 @@
+{
+  "name": "skylakearis-github-io",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Obsidian Markdown 기반 개인 기술 문서 사이트",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "build:preview": "node scripts/build.mjs --drafts",
+    "check": "node scripts/check.mjs",
+    "check:repo": "node scripts/check-repo.mjs",
+    "dev": "node scripts/dev.mjs",
+    "format:content": "node scripts/format-content.mjs",
+    "release:check": "node scripts/check-repo.mjs && node scripts/build.mjs && node scripts/check.mjs",
+    "sync:pins": "node scripts/sync-pins.mjs"
+  },
+  "devDependencies": {
+    "chokidar": "4.0.3",
+    "gray-matter": "4.0.3",
+    "highlight.js": "11.12.0",
+    "markdown-it": "14.3.2",
+    "markdown-it-task-lists": "2.1.1"
+  },
+  "engines": {
+    "node": ">=22.13.0 <23",
+    "pnpm": "11.19.0"
+  },
+  "packageManager": "pnpm@11.19.0"
+}
