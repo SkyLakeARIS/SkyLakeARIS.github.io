@@ -1,0 +1,9 @@
+{
+  "id": "seobkim-frontmatter",
+  "name": "Seobkim Frontmatter",
+  "version": "1.0.0",
+  "minAppVersion": "1.4.0",
+  "description": "새 Markdown 문서에 사이트용 머리말을 자동으로 추가합니다.",
+  "author": "seobkim",
+  "isDesktopOnly": false
+}

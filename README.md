@@ -96,15 +96,15 @@ Obsidian에서 이 프로젝트의 `content` 폴더를 Vault로 엽니다. Obsid
     └─ Study/
        └─ DirectX-12/
 
-새 Markdown 파일은 머리말 없이 만들고 본문부터 작성해도 됩니다.
+새 Markdown 파일을 만들면 Vault에 포함된 `Seobkim Frontmatter` 플러그인이 다음 머리말을 즉시 추가합니다.
 
     content/Study/DirectX-12/05-Descriptor-Heap.md
 
-개발 서버가 파일 저장을 감지하거나 `build`, `build:preview`, `format:content`를 실행하면 다음 머리말을 원본 Markdown 파일 앞에 자동으로 기록합니다.
+생성되는 머리말은 다음과 같습니다.
 
     ---
     title: "Descriptor Heap"
-    description: "본문의 첫 문단"
+    description: ""
     date: "2026-09-20T14:00:00+09:00"
     draft: false
     tags: []
@@ -112,16 +112,18 @@ Obsidian에서 이 프로젝트의 `content` 폴더를 Vault로 엽니다. Obsid
 
 자동값은 다음 기준으로 생성됩니다.
 
-- 제목: 파일 이름에서 숫자 순번과 확장자를 제거한 값
+- 제목: 파일 이름에서 숫자 순번과 확장자를 제거한 값. 자동 생성된 제목은 파일 이름을 바꾸면 함께 변경
 - 목록 순서: 게시 날짜가 최신인 문서부터 표시
 - 카테고리와 왼쪽 목차: 폴더 경로
 - URL: 폴더와 파일 이름
-- 설명: 본문의 첫 문단
+- 설명: 비워 두면 빌드할 때 본문의 첫 문단 사용
 - 읽는 시간: 본문 길이
 
 자동 생성되는 날짜에는 같은 날 작성한 글도 구분할 수 있도록 한국 시간까지 기록됩니다.
 
-따라서 파일을 만들고 바로 본문을 작성하면 됩니다. 이미 머리말이 있는 문서는 자동 생성 과정에서 변경하지 않습니다.
+따라서 파일을 만들고 바로 본문을 작성하면 됩니다. 이미 머리말이 있는 문서는 변경하지 않습니다.
+
+처음 복제한 PC에서 Obsidian이 커뮤니티 플러그인 실행을 차단하면 Vault를 신뢰한 뒤 `설정 → 커뮤니티 플러그인`에서 `Seobkim Frontmatter`를 한 번 활성화합니다. 플러그인이 꺼져 있어도 개발 서버, `build`, `build:preview`, `format:content`는 머리말이 없는 문서를 보정합니다.
 
 생성된 머리말의 값을 바꾸거나 초안을 표시하려면 직접 수정합니다.
 
