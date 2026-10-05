@@ -7,6 +7,7 @@ import site from "../src/config/site.mjs";
 import {
   CONTENT_DIR,
   DIST_DIR,
+  HIGHLIGHT_STYLE_FILE,
   IMAGE_EXTENSIONS,
   PINNED_FILE,
   PUBLIC_DIR,
@@ -169,7 +170,12 @@ export async function buildSite(options = {}) {
   }
 
   await copyDirectory(PUBLIC_DIR, DIST_DIR);
-  await writeText(path.join(DIST_DIR, "assets", "site.css"), await fs.readFile(STYLE_FILE, "utf8"));
+  const siteStyles = await fs.readFile(STYLE_FILE, "utf8");
+  const highlightStyles = await fs.readFile(HIGHLIGHT_STYLE_FILE, "utf8");
+  await writeText(
+    path.join(DIST_DIR, "assets", "site.css"),
+    siteStyles.trimEnd() + "\n\n" + highlightStyles.trim() + "\n"
+  );
   await writeText(path.join(DIST_DIR, "assets", "site.js"), await fs.readFile(SCRIPT_FILE, "utf8"));
   await writeText(path.join(DIST_DIR, ".nojekyll"), "");
 

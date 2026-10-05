@@ -21,6 +21,48 @@ const LANGUAGE_LABELS = {
   powershell: "PowerShell",
   text: "Text"
 };
+const HIGHLIGHT_IDS = ["yellow", "red", "green", "blue", "purple", "gray"];
+const CODE_HIGHLIGHT_PATTERN = new RegExp(
+  "hl-(" + HIGHLIGHT_IDS.join("|") + ")\\s*=\\s*\"([^\"]*)\"",
+  "g"
+);
+
+const BLOCK_ID_PATTERN = /(?:^|\s)\^([\p{Letter}\p{Number}_-]+)\s*$/u;
+
+function blockId(value) {
+  return String(value ?? "")
+    .replace(/^\^/, "")
+    .trim()
+    .replace(/[^\p{Letter}\p{Number}_-]+/gu, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function codeHighlightRanges(info) {
+  const ranges = [];
+  for (const match of String(info ?? "").matchAll(CODE_HIGHLIGHT_PATTERN)) {
+    for (const part of match[2].split(",")) {
+      const range = part.trim().match(/^(\d+)(?:-(\d+))?$/);
+      if (!range) continue;
+      const start = Math.max(1, Number(range[1]));
+      const end = Math.max(start, Number(range[2] || range[1]));
+      ranges.push({ color: match[1], start, count: end - start + 1 });
+    }
+  }
+  return ranges;
+}
+
+function removeBlockMarker(inline, match) {
+  inline.content = inline.content.slice(0, match.index).trimEnd();
+
+  for (let index = (inline.children?.length || 0) - 1; index >= 0; index -= 1) {
+    const child = inline.children[index];
+    if (child.type !== "text") continue;
+    const updated = child.content.replace(BLOCK_ID_PATTERN, "").trimEnd();
+    if (updated === child.content) continue;
+    child.content = updated;
+    break;
+  }
+}
 
 export function preprocessObsidian(body, document, documentLookup, assetByBase, warnings) {
   let output = String(body);
@@ -43,15 +85,23 @@ export function preprocessObsidian(body, document, documentLookup, assetByBase, 
     const targetParts = targetWithHeading.split("#");
     const target = targetParts[0].trim();
     const heading = targetParts.slice(1).join("#").trim();
-    const label = (aliasParts[1] || heading || titleFromFile(target)).trim();
-    const linkedDocument = documentLookup.get(slugify(target)) || documentLookup.get(target.toLowerCase());
+    const isBlockLink = heading.startsWith("^");
+    const label = (
+      aliasParts[1] ||
+      (isBlockLink ? titleFromFile(target) || "문단" : heading || titleFromFile(target))
+    ).trim();
+    const linkedDocument = target
+      ? documentLookup.get(slugify(target)) || documentLookup.get(target.toLowerCase())
+      : document;
 
     if (!linkedDocument) {
       warnings.push(document.sourceRel + ": 문서 링크를 찾지 못했습니다: " + target);
       return label;
     }
 
-    const hash = heading ? "#" + headingSlug(heading) : "";
+    const hash = heading
+      ? "#" + (isBlockLink ? blockId(heading) : headingSlug(heading))
+      : "";
     return "[" + label + "](" + linkedDocument.url + hash + ")";
   });
 
@@ -64,6 +114,34 @@ export function createMarkdownRenderer(assetByAbs, warnings) {
     linkify: true,
     typographer: false
   }).use(taskLists, { enabled: true, label: true, labelAfter: true });
+
+  markdown.core.ruler.push("seobkim-block-ids", state => {
+    const seen = new Set();
+
+    for (let index = 0; index < state.tokens.length; index += 1) {
+      const inline = state.tokens[index];
+      if (inline.type !== "inline") continue;
+
+      const match = inline.content.match(BLOCK_ID_PATTERN);
+      if (!match) continue;
+
+      const id = blockId(match[1]);
+      const opening = state.tokens[index - 1];
+      if (!id || !opening?.type.endsWith("_open")) continue;
+
+      removeBlockMarker(inline, match);
+
+      if (seen.has(id)) {
+        const source = state.env.currentDocument?.sourceRel || "문서";
+        warnings.push(source + ": 중복 블록 ID가 있습니다: " + id);
+        continue;
+      }
+
+      seen.add(id);
+      opening.attrSet("id", id);
+      opening.attrJoin("class", "block-target");
+    }
+  });
 
   markdown.core.ruler.push("seobkim-headings", state => {
     const counts = new Map();
@@ -90,8 +168,10 @@ export function createMarkdownRenderer(assetByAbs, warnings) {
 
   markdown.renderer.rules.fence = (tokens, index) => {
     const token = tokens[index];
-    const languageRaw = (token.info || "text").trim().split(/\s+/)[0].toLowerCase();
+    const languageInfo = (token.info || "").replace(/\s*\{[^}]*\}\s*$/, "").trim();
+    const languageRaw = (languageInfo.split(/\s+/)[0] || "text").toLowerCase();
     const language = languageRaw === "c++" ? "cpp" : languageRaw;
+    const lineHighlights = codeHighlightRanges(token.info);
     let highlighted = escapeHtml(token.content);
 
     if (language && hljs.getLanguage(language)) {
@@ -103,10 +183,21 @@ export function createMarkdownRenderer(assetByAbs, warnings) {
     }
 
     const label = LANGUAGE_LABELS[language] || language.toUpperCase() || "TEXT";
+    const highlightHtml = lineHighlights.map(range => (
+      '<span class="code-line-highlight hl-' + range.color + '" aria-hidden="true" ' +
+        'style="--line-start:' + range.start + ';--line-count:' + range.count + '"></span>'
+    )).join("");
+    const codeWithoutTrailingNewline = token.content.replace(/\r?\n$/, "");
+    const lineCount = Math.max(1, codeWithoutTrailingNewline.split(/\r?\n/).length);
+    const lineNumbers = Array.from({ length: lineCount }, (_, line) => line + 1).join("\n");
     return (
       '<div class="code-block">' +
         '<div class="code-head"><span>' + escapeHtml(label) + '</span><button class="copy-code" type="button">복사</button></div>' +
-        '<pre><code class="hljs language-' + escapeHtml(language) + '">' + highlighted + "</code></pre>" +
+        '<pre class="seobkim-code-highlight" style="--code-highlight-padding-top:20px;--code-highlight-line-height:1.75em">' +
+          highlightHtml +
+          '<span class="code-line-numbers" aria-hidden="true">' + lineNumbers + '</span>' +
+          '<code class="hljs language-' + escapeHtml(language) + '">' + highlighted + "</code>" +
+        "</pre>" +
       "</div>"
     );
   };

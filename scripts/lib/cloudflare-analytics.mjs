@@ -85,7 +85,10 @@ async function resolveSiteTag(configuration, force) {
     signal: AbortSignal.timeout(15000)
   });
   const payload = await response.json().catch(() => null);
-  if (!response.ok) throw new Error("Cloudflare 사이트 조회 오류 (" + response.status + ")");
+  if (!response.ok) {
+    const hint = response.status === 404 ? " Cloudflare 계정 ID를 확인해 주세요." : "";
+    throw new Error("Cloudflare 사이트 조회 오류 (" + response.status + ")." + hint);
+  }
   if (!payload?.success) {
     const message = payload?.errors?.map(item => item.message).join(" / ");
     throw new Error(message || "Cloudflare Web Analytics 사이트를 조회하지 못했습니다.");
@@ -93,9 +96,10 @@ async function resolveSiteTag(configuration, force) {
 
   const sites = Array.isArray(payload.result) ? payload.result : [];
   const site = sites.find(item =>
+    item.host === configuration.requestHost ||
     item.rules?.some(rule => rule.host === configuration.requestHost) ||
     item.ruleset?.zone_name === configuration.requestHost
-  ) || (sites.length === 1 ? sites[0] : null);
+  );
 
   if (!site?.site_tag) {
     throw new Error(configuration.requestHost + " Web Analytics Site Tag를 찾지 못했습니다.");
@@ -115,6 +119,15 @@ export async function getCloudflareAnalytics(options = {}) {
       days,
       host: configuration.requestHost,
       missing: configuration.missing
+    };
+  }
+
+  if (!/^[a-f0-9]{32}$/i.test(configuration.accountTag)) {
+    return {
+      status: "error",
+      days,
+      host: configuration.requestHost,
+      error: "Cloudflare 계정 ID 형식이 올바르지 않습니다. 대시보드에서 복사한 32자리 ID를 입력해 주세요."
     };
   }
 

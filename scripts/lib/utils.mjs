@@ -1,13 +1,22 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import MarkdownIt from "markdown-it";
 import site from "../../src/config/site.mjs";
+
+const plainTextMarkdown = new MarkdownIt({ html: true });
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 export const CONTENT_DIR = path.join(ROOT, "content");
 export const DIST_DIR = path.join(ROOT, "dist");
 export const PUBLIC_DIR = path.join(ROOT, "public");
 export const STYLE_FILE = path.join(ROOT, "src", "styles", "site.css");
+export const HIGHLIGHT_STYLE_FILE = path.join(
+  CONTENT_DIR,
+  ".obsidian",
+  "snippets",
+  "seobkim-highlights.css"
+);
 export const SCRIPT_FILE = path.join(ROOT, "src", "scripts", "site.js");
 export const PINNED_FILE = path.join(ROOT, "src", "data", "pinned-repos.json");
 export const IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".avif"]);
@@ -26,13 +35,28 @@ export function escapeHtml(value) {
 }
 
 export function stripMarkdown(value) {
-  return String(value ?? "")
+  const source = String(value ?? "")
     .replace(/^---[\s\S]*?---/m, "")
     .replace(/!\[\[[^\]]+\]\]/g, "")
-    .replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, "$2")
-    .replace(/\x60\x60\x60[\s\S]*?\x60\x60\x60/g, "")
-    .replace(/~~~[\s\S]*?~~~/g, "")
-    .replace(/[#>*_~\x60[\]()!-]/g, " ")
+    .replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_match, target, label) => label || target);
+  const text = plainTextMarkdown.parse(source, {}).map(token => {
+    if (token.type === "inline") {
+      return (token.children || []).map(child => {
+        if (child.type === "text" || child.type === "code_inline") return child.content;
+        if (child.type === "softbreak" || child.type === "hardbreak" || /^<br\b/i.test(child.content)) return " ";
+        return "";
+      }).join("");
+    }
+    if (token.type === "html_block") {
+      const plain = token.content
+        .replace(/<!--[\s\S]*?-->/g, " ")
+        .replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, " ")
+        .replace(/<\/?[a-z][a-z0-9:-]*(?:[^>"']|"[^"]*"|'[^']*')*>/gi, " ");
+      return plainTextMarkdown.utils.unescapeAll(plain);
+    }
+    return "";
+  }).join(" ");
+  return text
     .replace(/\s+/g, " ")
     .trim();
 }

@@ -79,6 +79,7 @@ Windows x64와 ARM64를 지원합니다. 시스템에 Node.js나 pnpm을 설치�
 - `build`: 초안을 제외한 공개 사이트 생성
 - `build:preview`: 초안을 포함한 일회성 빌드
 - `check`: 생성된 사이트의 링크, 공개 범위와 메타데이터 검사
+- `check:writing`: 수정일 자동 기록, 본문 보존, 날짜 표시와 작성일 정렬 검사
 - `check:repo`: 버전 고정, Git 제외 항목, JSON, PC 절대 경로 유출 검사
 - `format:content`: 머리말이 없는 모든 Markdown 파일에 기본 머리말 추가
 - `release:check`: 저장소 검사, 공개 빌드와 생성 사이트 검사를 순서대로 실행
@@ -96,7 +97,7 @@ Obsidian에서 이 프로젝트의 `content` 폴더를 Vault로 엽니다. Obsid
     └─ Study/
        └─ DirectX-12/
 
-새 Markdown 파일을 만들면 Vault에 포함된 `Seobkim Frontmatter` 플러그인이 다음 머리말을 즉시 추가합니다.
+새 Markdown 파일을 만들면 Vault에 포함된 `Seobkim Writing Tools` 플러그인이 다음 머리말을 즉시 추가합니다.
 
     content/Study/DirectX-12/05-Descriptor-Heap.md
 
@@ -121,9 +122,23 @@ Obsidian에서 이 프로젝트의 `content` 폴더를 Vault로 엽니다. Obsid
 
 자동 생성되는 날짜에는 같은 날 작성한 글도 구분할 수 있도록 한국 시간까지 기록됩니다.
 
-따라서 파일을 만들고 바로 본문을 작성하면 됩니다. 이미 머리말이 있는 문서는 변경하지 않습니다.
+따라서 파일을 만들고 바로 본문을 작성하면 됩니다. 이미 머리말이 있는 문서는 자동 생성값으로 덮어쓰지 않습니다.
 
-처음 복제한 PC에서 Obsidian이 커뮤니티 플러그인 실행을 차단하면 Vault를 신뢰한 뒤 `설정 → 커뮤니티 플러그인`에서 `Seobkim Frontmatter`를 한 번 활성화합니다. 플러그인이 꺼져 있어도 개발 서버, `build`, `build:preview`, `format:content`는 머리말이 없는 문서를 보정합니다.
+### 작성일과 수정일
+
+- `date`: 문서 생성 시 기록한 작성일입니다. 목차와 최근 글의 정렬은 계속 이 값을 사용합니다.
+- `updated`: Obsidian에서 본문을 수정해 저장하면 플러그인이 한국 시간으로 자동 기록합니다. 작성일은 바꾸지 않습니다.
+- `draft`, 태그 등 머리말만 바꿀 때와 앱을 다시 열 때는 수정일을 갱신하지 않습니다. 빌드·배포도 수정일을 바꾸지 않습니다.
+- 글 제목 바로 아래에 작성일과 수정일을 작은 글씨로 표시합니다. 한국 시간으로 같은 날짜이면 작성일만 표시합니다.
+
+수정일은 문서의 머리말에 저장되므로 다른 PC에서도 그대로 사용합니다. Obsidian을 닫은 상태에서 외부 편집기로 수정한다면 `updated`를 직접 기록할 수 있습니다. 기존 문서의 과거 수정일은 임의로 채우지 않고, 플러그인 적용 후 본문을 수정할 때부터 기록합니다.
+
+    date: "2026-10-01T14:00:00+09:00"
+    updated: "2026-10-05T16:30:00+09:00"
+
+플러그인 갱신 후에는 작성 작업을 마친 뒤 Obsidian을 재시작하거나 `Seobkim Writing Tools`를 다시 활성화합니다.
+
+처음 복제한 PC에서 Obsidian이 커뮤니티 플러그인 실행을 차단하면 Vault를 신뢰한 뒤 `설정 → 커뮤니티 플러그인`에서 `Seobkim Writing Tools`를 한 번 활성화합니다. 플러그인이 꺼져 있어도 개발 서버, `build`, `build:preview`, `format:content`는 머리말이 없는 문서를 보정합니다.
 
 생성된 머리말의 값을 바꾸거나 초안을 표시하려면 직접 수정합니다.
 
@@ -160,6 +175,47 @@ Obsidian 위키 링크를 지원합니다.
     [[02-Command-Queue]]
     [[02-Command-Queue|Command Queue 문서]]
     [[02-Command-Queue#동기화|동기화 부분]]
+
+특정 문단으로 연결하려면 대상 문단 끝에 고유한 블록 ID를 붙입니다. 블록 ID는 문서 안에서 중복되지 않게 영문, 숫자, 하이픈으로 작성합니다.
+
+    버퍼의 생성과 해제는 버퍼 매니저가 전담한다. ^buffer-lifetime
+
+다른 문서 또는 같은 문서에서 `#^블록-ID`로 연결합니다.
+
+    [[버퍼 매니저 추가#^buffer-lifetime|버퍼 수명 관리 방식]]
+    [[#^buffer-lifetime|위 문단 다시 보기]]
+
+## 강조 색상
+
+Obsidian과 홈페이지가 같은 강조 색상 프리셋을 사용합니다.
+
+Obsidian에서 텍스트를 선택하고 `Ctrl+Shift+H`를 누른 뒤 색상을 선택합니다. 텍스트를 선택하지 않고 실행하면 강조용 자리표시자를 삽입합니다. 명령 팔레트의 `강조:` 명령으로 특정 색상을 바로 적용할 수도 있으며, Obsidian 단축키 설정에서 각 색상에 별도 단축키를 지정할 수 있습니다.
+
+강조를 취소하려면 같은 메뉴에서 `강조 해제`를 선택하거나 명령 팔레트의 `강조: 해제`를 실행합니다. 본문은 선택과 겹치는 강조 구간 전체를 해제하며, 강조된 글 안에 커서만 두고 실행해도 됩니다. 코드 블록은 선택한 줄의 강조만 해제합니다. 선택하지 않고 코드 줄에 커서를 두면 그 한 줄만 해제합니다. 글과 코드 내용, 선택하지 않은 코드 줄의 강조는 그대로 유지됩니다.
+
+    <mark class="hl-yellow">핵심 결정</mark>
+    <mark class="hl-red">주의 또는 문제</mark>
+    <mark class="hl-green">해결 또는 검증 완료</mark>
+    <mark class="hl-blue">개념 또는 정보</mark>
+    <mark class="hl-purple">대안 또는 설계</mark>
+    <mark class="hl-gray">보충 설명</mark>
+
+색상 원본은 `content/.obsidian/snippets/seobkim-highlights.css` 한 곳에서 관리합니다. Obsidian은 CSS 스니펫으로 읽고, 홈페이지 빌드는 같은 파일을 최종 `site.css`에 포함합니다. 새 프리셋은 이 파일에 색상 변수와 `mark.hl-*` 선택자를 추가합니다.
+
+코드 블록 안에서 줄을 선택한 뒤에도 `Ctrl+Shift+H`를 사용합니다. 선택한 색상과 줄 번호는 코드 내용이 아니라 시작 펜스에 기록되므로 코드를 복사할 때 포함되지 않습니다.
+
+    ```cpp {hl-yellow="2-3" hl-red="6"}
+    VkBuffer buffer{};
+    CreateBuffer(buffer);
+    UploadData(buffer);
+    BindBuffer(buffer);
+    Draw();
+    DestroyBuffer(buffer);
+    ```
+
+줄 하나는 `2`, 연속된 줄은 `2-4`, 떨어진 줄은 `2,5,8` 형식으로 기록합니다. 여러 색상을 한 코드 블록에 함께 사용할 수 있습니다. Obsidian의 Live Preview, 소스 보기, 읽기 보기와 홈페이지에서 줄 강조와 줄 번호가 나타납니다. Obsidian과 홈페이지 모두 코드 블록 배경과 줄 강조가 라이트·다크 모드에 맞춰 바뀝니다.
+
+코드 블록 내부에는 `<mark>` 태그를 직접 넣지 않습니다. 시작 펜스의 `hl-*` 속성이나 `Ctrl+Shift+H`로 줄을 강조해야 태그가 코드에 섞이지 않습니다. 플러그인 파일을 갱신한 뒤에는 `Seobkim Writing Tools`를 다시 활성화하거나 Obsidian을 재시작합니다.
 
 ## 공개 빌드 확인
 

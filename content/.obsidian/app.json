@@ -1,5 +1,6 @@
 {
   "alwaysUpdateLinks": true,
   "attachmentFolderPath": "_assets",
-  "newLinkFormat": "shortest"
+  "newLinkFormat": "shortest",
+  "showLineNumber": true
 }

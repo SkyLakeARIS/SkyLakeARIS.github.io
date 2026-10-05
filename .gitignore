@@ -9,6 +9,10 @@ dist/
 .env
 .env.*
 
+# Personal notes kept outside the public repository
+content/00_메모/
+content/0_메모.md
+
 # Obsidian local UI state
 content/.obsidian/workspace.json
 content/.obsidian/workspace-mobile.json

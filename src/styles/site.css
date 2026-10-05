@@ -19,11 +19,22 @@
   --success: #248660;
   --warning: #9a681a;
   --warning-soft: #fff6df;
-  --code-bg: #111720;
-  --code-head: #161e29;
-  --code-border: #2b3543;
-  --code-text: #dce5f0;
-  --code-muted: #8f9caf;
+  --code-bg: #f8fafc;
+  --code-head: #eef2f6;
+  --code-border: #d8dee7;
+  --code-text: #263044;
+  --code-muted: #697586;
+  --code-copy-bg: #ffffff;
+  --code-copy-border: #c8d0db;
+  --code-copy-hover: #8e9aaa;
+  --code-line-number: #9aa4b2;
+  --code-keyword: #7c3aed;
+  --code-type: #087f5b;
+  --code-function: #1d5fd1;
+  --code-string: #9a6700;
+  --code-comment: #7c8798;
+  --code-number: #b54708;
+  --code-variable: #263044;
   --shadow: 0 12px 34px rgba(37, 52, 75, .09);
 }
 
@@ -44,6 +55,22 @@
   --success: #68d1a6;
   --warning: #f0bf69;
   --warning-soft: #3b2d17;
+  --code-bg: #111720;
+  --code-head: #161e29;
+  --code-border: #2b3543;
+  --code-text: #dce5f0;
+  --code-muted: #8f9caf;
+  --code-copy-bg: transparent;
+  --code-copy-border: #354151;
+  --code-copy-hover: #657489;
+  --code-line-number: #5e6a7b;
+  --code-keyword: #d69bff;
+  --code-type: #73d5c2;
+  --code-function: #84b8ff;
+  --code-string: #e8c987;
+  --code-comment: #758399;
+  --code-number: #f1a178;
+  --code-variable: #dce5f0;
   --shadow: 0 14px 38px rgba(0, 0, 0, .3);
 }
 
@@ -65,6 +92,22 @@
     --success: #68d1a6;
     --warning: #f0bf69;
     --warning-soft: #3b2d17;
+    --code-bg: #111720;
+    --code-head: #161e29;
+    --code-border: #2b3543;
+    --code-text: #dce5f0;
+    --code-muted: #8f9caf;
+    --code-copy-bg: transparent;
+    --code-copy-border: #354151;
+    --code-copy-hover: #657489;
+    --code-line-number: #5e6a7b;
+    --code-keyword: #d69bff;
+    --code-type: #73d5c2;
+    --code-function: #84b8ff;
+    --code-string: #e8c987;
+    --code-comment: #758399;
+    --code-number: #f1a178;
+    --code-variable: #dce5f0;
     --shadow: 0 14px 38px rgba(0, 0, 0, .3);
   }
 }
@@ -736,9 +779,11 @@ img {
 .article h1 {
   max-width: 720px;
   margin: 0;
-  font-size: clamp(38px, 5vw, 52px);
-  line-height: 1.16;
-  letter-spacing: -.045em;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -.025em;
+  overflow-wrap: anywhere;
 }
 
 .article-lead {
@@ -750,10 +795,16 @@ img {
 
 .article-meta {
   display: flex;
-  gap: 16px;
-  margin-top: 21px;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin-top: 14px;
   color: var(--text-faint);
   font-size: 12px;
+  line-height: 1.7;
+}
+
+.article-meta > span {
+  white-space: nowrap;
 }
 
 .top-toc,
@@ -834,6 +885,10 @@ img {
 .article-body h4 {
   scroll-margin-top: 88px;
   letter-spacing: -.025em;
+}
+
+.article-body .block-target {
+  scroll-margin-top: 88px;
 }
 
 .article-body h2 {
@@ -937,8 +992,8 @@ img {
 .copy-code {
   padding: 5px 8px;
   color: var(--code-muted);
-  background: transparent;
-  border: 1px solid #354151;
+  background: var(--code-copy-bg);
+  border: 1px solid var(--code-copy-border);
   border-radius: 6px;
   cursor: pointer;
   font: inherit;
@@ -946,7 +1001,7 @@ img {
 
 .copy-code:hover {
   color: var(--code-text);
-  border-color: #657489;
+  border-color: var(--code-copy-hover);
 }
 
 pre {
@@ -957,40 +1012,58 @@ pre {
   tab-size: 4;
 }
 
+.code-block pre {
+  padding-left: 58px;
+}
+
+.code-line-numbers {
+  position: absolute;
+  top: var(--code-highlight-padding-top, 20px);
+  left: 0;
+  z-index: 2;
+  width: 40px;
+  color: var(--code-line-number);
+  text-align: right;
+  white-space: pre;
+  line-height: var(--code-highlight-line-height, 1.75em);
+  pointer-events: none;
+  user-select: none;
+}
+
 .hljs-keyword,
 .hljs-selector-tag,
 .hljs-literal {
-  color: #d69bff;
+  color: var(--code-keyword);
 }
 
 .hljs-type,
 .hljs-title.class_,
 .hljs-built_in {
-  color: #73d5c2;
+  color: var(--code-type);
 }
 
 .hljs-title.function_,
 .hljs-function .hljs-title {
-  color: #84b8ff;
+  color: var(--code-function);
 }
 
 .hljs-string,
 .hljs-meta .hljs-string {
-  color: #e8c987;
+  color: var(--code-string);
 }
 
 .hljs-comment {
-  color: #758399;
+  color: var(--code-comment);
   font-style: italic;
 }
 
 .hljs-number {
-  color: #f1a178;
+  color: var(--code-number);
 }
 
 .hljs-variable,
 .hljs-params {
-  color: #dce5f0;
+  color: var(--code-variable);
 }
 
 .doc-figure {
@@ -1455,7 +1528,7 @@ pre {
   }
 
   .article h1 {
-    font-size: 37px;
+    font-size: 28px;
   }
 
   .article-lead {
@@ -1463,8 +1536,7 @@ pre {
   }
 
   .article-meta {
-    display: grid;
-    gap: 4px;
+    gap: 4px 14px;
   }
 
   .article-top-nav {

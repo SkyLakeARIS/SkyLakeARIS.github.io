@@ -270,6 +270,19 @@ function bottomNavigation(previous, next) {
   );
 }
 
+function articleDatesHtml(document) {
+  const dates = [];
+  const created = formatDate(document.date);
+  const modified = formatDate(document.updated);
+  if (created) {
+    dates.push('<span class="article-date">작성 <time datetime="' + escapeHtml(document.date) + '">' + escapeHtml(created) + '</time></span>');
+  }
+  if (modified && modified !== created && dateValue(document.updated) > dateValue(document.date)) {
+    dates.push('<span class="article-date">수정 <time datetime="' + escapeHtml(document.updated) + '">' + escapeHtml(modified) + '</time></span>');
+  }
+  return dates.join("");
+}
+
 export function articleHtml(document, documents, previous, next, analyticsEnabled = false) {
   const headings = document.headings;
   const toc = renderToc(headings);
@@ -289,8 +302,8 @@ export function articleHtml(document, documents, previous, next, analyticsEnable
         '<div class="breadcrumbs"><a href="/docs/">문서</a><b>/</b>' + breadcrumbs + "</div>" +
         draftBanner +
         "<h1>" + escapeHtml(document.title) + "</h1>" +
+        '<div class="article-meta">' + articleDatesHtml(document) + '<span>읽는 시간 ' + document.minutes + "분</span></div>" +
         '<p class="article-lead">' + escapeHtml(document.description) + "</p>" +
-        '<div class="article-meta"><span>' + escapeHtml(formatDate(document.updated || document.date)) + '</span><span>읽는 시간 ' + document.minutes + "분</span></div>" +
         (headings.length ? '<details class="top-toc" open><summary>이 글의 목차</summary>' + toc + "</details>" : "") +
         (headings.length ? '<details class="article-toc-mobile"><summary>현재 글 목차</summary>' + toc + "</details>" : "") +
         '<div class="article-body">' + document.html + "</div>" +

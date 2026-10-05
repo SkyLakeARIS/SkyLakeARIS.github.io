@@ -1,5 +1,8 @@
 {
   "interfaceFontFamily": "Noto Sans KR",
   "textFontFamily": "Noto Sans KR",
-  "monospaceFontFamily": "Consolas"
+  "monospaceFontFamily": "Consolas",
+  "enabledCssSnippets": [
+    "seobkim-highlights"
+  ]
 }

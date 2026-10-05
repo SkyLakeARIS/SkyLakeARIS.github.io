@@ -8,10 +8,12 @@
     "build": "node scripts/build.mjs",
     "build:preview": "node scripts/build.mjs --drafts",
     "check": "node scripts/check.mjs",
+    "check:markdown": "node scripts/check-markdown.mjs",
+    "check:writing": "node scripts/check-writing.mjs",
     "check:repo": "node scripts/check-repo.mjs",
     "dev": "node scripts/dev.mjs",
     "format:content": "node scripts/format-content.mjs",
-    "release:check": "node scripts/check-repo.mjs && node scripts/build.mjs && node scripts/check.mjs",
+    "release:check": "node scripts/check-repo.mjs && node scripts/check-markdown.mjs && node scripts/check-writing.mjs && node scripts/build.mjs && node scripts/check.mjs",
     "sync:pins": "node scripts/sync-pins.mjs"
   },
   "devDependencies": {

@@ -1,0 +1,241 @@
+/*
+ * Obsidian과 홈페이지가 함께 사용하는 강조 색상 원본입니다.
+ * 프리셋을 추가할 때 색상 변수와 mark.hl-* 선택자만 추가합니다.
+ */
+
+:root,
+.theme-light {
+  --code-bg: #f8fafc;
+  --code-text: #263044;
+  --code-line-number: #9aa4b2;
+  --hl-yellow-bg: #fff1a8;
+  --hl-yellow-fg: #5a4300;
+  --hl-red-bg: #ffd8d6;
+  --hl-red-fg: #812520;
+  --hl-green-bg: #cff3df;
+  --hl-green-fg: #185c3d;
+  --hl-blue-bg: #d8e8ff;
+  --hl-blue-fg: #204e89;
+  --hl-purple-bg: #e9ddfb;
+  --hl-purple-fg: #5b3b82;
+  --hl-gray-bg: #e7ebf0;
+  --hl-gray-fg: #3f4b5a;
+  --hl-yellow-code-bg: #fff7cc;
+  --hl-yellow-line: #d8a900;
+  --hl-red-code-bg: #ffe7e5;
+  --hl-red-line: #cf4b43;
+  --hl-green-code-bg: #e0f7e9;
+  --hl-green-line: #279064;
+  --hl-blue-code-bg: #e6f0ff;
+  --hl-blue-line: #3c78c8;
+  --hl-purple-code-bg: #f2eafd;
+  --hl-purple-line: #7a5ab5;
+  --hl-gray-code-bg: #edf1f5;
+  --hl-gray-line: #798292;
+}
+
+:root[data-theme="dark"],
+.theme-dark {
+  --code-bg: #111720;
+  --code-text: #dce5f0;
+  --code-line-number: #5e6a7b;
+  --hl-yellow-bg: #554514;
+  --hl-yellow-fg: #ffe48a;
+  --hl-red-bg: #55282a;
+  --hl-red-fg: #ffc0bc;
+  --hl-green-bg: #1c4735;
+  --hl-green-fg: #a6e4c2;
+  --hl-blue-bg: #203d62;
+  --hl-blue-fg: #b8d5ff;
+  --hl-purple-bg: #3f3156;
+  --hl-purple-fg: #dec9ff;
+  --hl-gray-bg: #303844;
+  --hl-gray-fg: #d6dee8;
+  --hl-yellow-code-bg: rgba(255, 228, 138, .17);
+  --hl-yellow-line: #ffe48a;
+  --hl-red-code-bg: rgba(255, 192, 188, .16);
+  --hl-red-line: #ffc0bc;
+  --hl-green-code-bg: rgba(166, 228, 194, .16);
+  --hl-green-line: #a6e4c2;
+  --hl-blue-code-bg: rgba(184, 213, 255, .16);
+  --hl-blue-line: #b8d5ff;
+  --hl-purple-code-bg: rgba(222, 201, 255, .16);
+  --hl-purple-line: #dec9ff;
+  --hl-gray-code-bg: rgba(214, 222, 232, .14);
+  --hl-gray-line: #d6dee8;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --code-bg: #111720;
+    --code-text: #dce5f0;
+    --code-line-number: #5e6a7b;
+    --hl-yellow-bg: #554514;
+    --hl-yellow-fg: #ffe48a;
+    --hl-red-bg: #55282a;
+    --hl-red-fg: #ffc0bc;
+    --hl-green-bg: #1c4735;
+    --hl-green-fg: #a6e4c2;
+    --hl-blue-bg: #203d62;
+    --hl-blue-fg: #b8d5ff;
+    --hl-purple-bg: #3f3156;
+    --hl-purple-fg: #dec9ff;
+    --hl-gray-bg: #303844;
+    --hl-gray-fg: #d6dee8;
+    --hl-yellow-code-bg: rgba(255, 228, 138, .17);
+    --hl-yellow-line: #ffe48a;
+    --hl-red-code-bg: rgba(255, 192, 188, .16);
+    --hl-red-line: #ffc0bc;
+    --hl-green-code-bg: rgba(166, 228, 194, .16);
+    --hl-green-line: #a6e4c2;
+    --hl-blue-code-bg: rgba(184, 213, 255, .16);
+    --hl-blue-line: #b8d5ff;
+    --hl-purple-code-bg: rgba(222, 201, 255, .16);
+    --hl-purple-line: #dec9ff;
+    --hl-gray-code-bg: rgba(214, 222, 232, .14);
+    --hl-gray-line: #d6dee8;
+  }
+}
+
+mark[class*="hl-"] {
+  padding: .08em .3em;
+  color: var(--hl-fg);
+  background: var(--hl-bg);
+  border-radius: .3em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+mark.hl-yellow,
+.code-line-highlight.hl-yellow,
+.seobkim-code-line.hl-yellow {
+  --hl-bg: var(--hl-yellow-bg);
+  --hl-fg: var(--hl-yellow-fg);
+  --hl-code-bg: var(--hl-yellow-code-bg);
+  --hl-line: var(--hl-yellow-line);
+}
+
+mark.hl-red,
+.code-line-highlight.hl-red,
+.seobkim-code-line.hl-red {
+  --hl-bg: var(--hl-red-bg);
+  --hl-fg: var(--hl-red-fg);
+  --hl-code-bg: var(--hl-red-code-bg);
+  --hl-line: var(--hl-red-line);
+}
+
+mark.hl-green,
+.code-line-highlight.hl-green,
+.seobkim-code-line.hl-green {
+  --hl-bg: var(--hl-green-bg);
+  --hl-fg: var(--hl-green-fg);
+  --hl-code-bg: var(--hl-green-code-bg);
+  --hl-line: var(--hl-green-line);
+}
+
+mark.hl-blue,
+.code-line-highlight.hl-blue,
+.seobkim-code-line.hl-blue {
+  --hl-bg: var(--hl-blue-bg);
+  --hl-fg: var(--hl-blue-fg);
+  --hl-code-bg: var(--hl-blue-code-bg);
+  --hl-line: var(--hl-blue-line);
+}
+
+mark.hl-purple,
+.code-line-highlight.hl-purple,
+.seobkim-code-line.hl-purple {
+  --hl-bg: var(--hl-purple-bg);
+  --hl-fg: var(--hl-purple-fg);
+  --hl-code-bg: var(--hl-purple-code-bg);
+  --hl-line: var(--hl-purple-line);
+}
+
+mark.hl-gray,
+.code-line-highlight.hl-gray,
+.seobkim-code-line.hl-gray {
+  --hl-bg: var(--hl-gray-bg);
+  --hl-fg: var(--hl-gray-fg);
+  --hl-code-bg: var(--hl-gray-code-bg);
+  --hl-line: var(--hl-gray-line);
+}
+
+pre.seobkim-code-highlight {
+  position: relative;
+  padding-left: 58px !important;
+  isolation: isolate;
+}
+
+pre.seobkim-code-highlight > code {
+  position: relative;
+  z-index: 1;
+}
+
+.markdown-rendered pre.seobkim-code-highlight {
+  overflow-x: auto;
+  color: var(--code-text);
+  background: var(--code-bg);
+  font-family: Consolas, "Cascadia Code", "SFMono-Regular", monospace;
+}
+
+.markdown-rendered pre.seobkim-code-highlight > code {
+  display: block;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  white-space: pre;
+  font: inherit;
+}
+
+.markdown-source-view.mod-cm6 .cm-line.seobkim-code-line {
+  position: relative;
+  padding-inline-start: 3.75em !important;
+  color: var(--code-text);
+  background: var(--code-bg);
+  font-family: Consolas, "Cascadia Code", "SFMono-Regular", monospace;
+}
+
+.markdown-source-view.mod-cm6 .cm-line.seobkim-code-line::before {
+  position: absolute;
+  inset-inline-start: .4em;
+  width: 2.4em;
+  color: var(--code-line-number);
+  text-align: end;
+  content: attr(data-code-line);
+  pointer-events: none;
+  user-select: none;
+}
+
+.markdown-source-view.mod-cm6 .cm-line.seobkim-code-line[class*="hl-"] {
+  background: var(--hl-code-bg);
+  box-shadow: inset 3px 0 var(--hl-line);
+}
+
+pre.seobkim-code-highlight > .code-line-numbers {
+  position: absolute;
+  top: var(--code-highlight-padding-top, 0px);
+  left: 0;
+  z-index: 2;
+  width: 40px;
+  color: var(--code-line-number, var(--text-faint, var(--text-muted)));
+  text-align: right;
+  white-space: pre;
+  line-height: var(--code-highlight-line-height, 1.75em);
+  pointer-events: none;
+  user-select: none;
+}
+
+.code-line-highlight {
+  position: absolute;
+  top: calc(
+    var(--code-highlight-padding-top, 0px) +
+    (var(--line-start) - 1) * var(--code-highlight-line-height, 1.75em)
+  );
+  right: 0;
+  left: 0;
+  z-index: 0;
+  height: calc(var(--line-count) * var(--code-highlight-line-height, 1.75em));
+  background: var(--hl-code-bg);
+  border-left: 3px solid var(--hl-line);
+  pointer-events: none;
+}
