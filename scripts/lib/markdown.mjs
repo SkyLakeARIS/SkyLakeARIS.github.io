@@ -6,6 +6,7 @@ import {
   escapeHtml,
   headingSlug,
   slugify,
+  stripMarkdown,
   titleFromFile
 } from "./utils.mjs";
 
@@ -28,6 +29,14 @@ const CODE_HIGHLIGHT_PATTERN = new RegExp(
 );
 
 const BLOCK_ID_PATTERN = /(?:^|\s)\^([\p{Letter}\p{Number}_-]+)\s*$/u;
+
+function assetUrl(rawPath) {
+  return rawPath.split("/").map(segment => (
+    encodeURIComponent(segment).replace(/[!'()*]/g, character => (
+      "%" + character.charCodeAt(0).toString(16).toUpperCase()
+    ))
+  )).join("/");
+}
 
 function blockId(value) {
   return String(value ?? "")
@@ -76,7 +85,7 @@ export function preprocessObsidian(body, document, documentLookup, assetByBase, 
       warnings.push(document.sourceRel + ": 이미지를 찾지 못했습니다: " + target);
       return match;
     }
-    return "![" + caption + "](" + asset + ")";
+    return "![" + caption + "](" + assetUrl(asset) + ")";
   });
 
   output = output.replace(/\[\[([^\]]+)\]\]/g, (match, inside) => {
@@ -112,6 +121,8 @@ export function createMarkdownRenderer(assetByAbs, warnings) {
   const markdown = new MarkdownIt({
     html: true,
     linkify: true,
+    // Preserve Enter inside paragraphs, matching the writing workflow in Obsidian.
+    breaks: true,
     typographer: false
   }).use(taskLists, { enabled: true, label: true, labelAfter: true });
 
@@ -153,14 +164,14 @@ export function createMarkdownRenderer(assetByAbs, warnings) {
 
       const inline = state.tokens[index + 1];
       const level = Number(token.tag.slice(1));
-      const text = inline?.content || "section";
+      const text = stripMarkdown(inline?.content || "section");
       const base = headingSlug(text);
       const count = counts.get(base) || 0;
       counts.set(base, count + 1);
       const id = count === 0 ? base : base + "-" + (count + 1);
       token.attrSet("id", id);
 
-      if (level === 2 || level === 3) {
+      if (level >= 2 && level <= 5) {
         state.env.headings.push({ level, text, id });
       }
     }
@@ -222,7 +233,7 @@ export function createMarkdownRenderer(assetByAbs, warnings) {
       const absoluteSource = path.resolve(path.dirname(env.currentDocument.sourceAbs), decodeURIComponent(source));
       const mapped = assetByAbs.get(path.resolve(absoluteSource));
       if (mapped) {
-        source = mapped;
+        source = assetUrl(mapped);
       } else {
         warnings.push(env.currentDocument.sourceRel + ": 이미지 경로를 찾지 못했습니다: " + source);
       }

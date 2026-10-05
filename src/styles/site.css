@@ -1,9 +1,26 @@
+@font-face {
+  font-family: "D2Coding";
+  src: url("/fonts/d2coding/D2Coding-Regular.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "D2Coding";
+  src: url("/fonts/d2coding/D2Coding-Bold.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
+
 :root {
   color-scheme: light;
   --header-h: 64px;
   --sidebar-w: 272px;
   --toc-w: 218px;
   --content-w: 760px;
+  --code-font: Consolas, "D2Coding", "Cascadia Code", "SFMono-Regular", "Malgun Gothic", "Apple SD Gothic Neo", monospace;
   --bg: #f8fafc;
   --surface: #ffffff;
   --surface-soft: #f3f6fa;
@@ -32,7 +49,7 @@
   --code-type: #087f5b;
   --code-function: #1d5fd1;
   --code-string: #9a6700;
-  --code-comment: #7c8798;
+  --code-comment: #657185;
   --code-number: #b54708;
   --code-variable: #263044;
   --shadow: 0 12px 34px rgba(37, 52, 75, .09);
@@ -68,7 +85,7 @@
   --code-type: #73d5c2;
   --code-function: #84b8ff;
   --code-string: #e8c987;
-  --code-comment: #758399;
+  --code-comment: #97a4b6;
   --code-number: #f1a178;
   --code-variable: #dce5f0;
   --shadow: 0 14px 38px rgba(0, 0, 0, .3);
@@ -105,7 +122,7 @@
     --code-type: #73d5c2;
     --code-function: #84b8ff;
     --code-string: #e8c987;
-    --code-comment: #758399;
+    --code-comment: #97a4b6;
     --code-number: #f1a178;
     --code-variable: #dce5f0;
     --shadow: 0 14px 38px rgba(0, 0, 0, .3);
@@ -786,13 +803,6 @@ img {
   overflow-wrap: anywhere;
 }
 
-.article-lead {
-  max-width: 700px;
-  margin: 20px 0 0;
-  color: var(--text-soft);
-  font-size: 18px;
-}
-
 .article-meta {
   display: flex;
   flex-wrap: wrap;
@@ -827,7 +837,7 @@ img {
 .top-toc .toc-links,
 .article-toc-mobile .toc-links {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 4px 20px;
   padding: 0 16px 16px;
 }
@@ -835,9 +845,11 @@ img {
 .toc-links a {
   display: block;
   padding: 4px 0;
+  padding-inline-start: calc(var(--toc-depth, 0) * 13px);
   color: var(--text-soft);
   font-size: 12px;
   line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
 .toc-links a:hover,
@@ -849,8 +861,7 @@ img {
   font-weight: 740;
 }
 
-.toc-links .toc-level-3 {
-  padding-left: 13px;
+.toc-links .toc-subheading {
   color: var(--text-faint);
 }
 
@@ -880,9 +891,17 @@ img {
   color: var(--text);
 }
 
+.article-body :not(pre) > code {
+  font-family: var(--code-font);
+  font-size: .95em;
+  font-weight: inherit;
+  font-variant-ligatures: none;
+}
+
 .article-body h2,
 .article-body h3,
-.article-body h4 {
+.article-body h4,
+.article-body h5 {
   scroll-margin-top: 88px;
   letter-spacing: -.025em;
 }
@@ -892,24 +911,17 @@ img {
 }
 
 .article-body h2 {
-  margin: 58px 0 18px;
   padding-bottom: 9px;
   border-bottom: 1px solid var(--border);
   font-size: 29px;
 }
 
 .article-body h3 {
-  margin: 38px 0 13px;
   font-size: 22px;
 }
 
 .article-body h4 {
-  margin: 30px 0 10px;
   font-size: 18px;
-}
-
-.article-body p {
-  margin: 16px 0;
 }
 
 .article-body a {
@@ -986,7 +998,7 @@ img {
   color: var(--code-muted);
   background: var(--code-head);
   border-bottom: 1px solid var(--code-border);
-  font: 12px Consolas, "Cascadia Code", "SFMono-Regular", monospace;
+  font: 12px var(--code-font);
 }
 
 .copy-code {
@@ -1008,8 +1020,13 @@ pre {
   margin: 0;
   padding: 20px;
   overflow-x: auto;
-  font: 13.5px/1.75 Consolas, "Cascadia Code", "SFMono-Regular", monospace;
+  font: 14.5px/1.75 var(--code-font);
+  font-variant-ligatures: none;
   tab-size: 4;
+}
+
+pre > code {
+  font: inherit;
 }
 
 .code-block pre {
@@ -1054,7 +1071,7 @@ pre {
 
 .hljs-comment {
   color: var(--code-comment);
-  font-style: italic;
+  font-style: normal;
 }
 
 .hljs-number {
@@ -1529,10 +1546,6 @@ pre {
 
   .article h1 {
     font-size: 28px;
-  }
-
-  .article-lead {
-    font-size: 17px;
   }
 
   .article-meta {

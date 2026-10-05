@@ -166,7 +166,7 @@ const dates = html.match(/<div class="article-meta">([\s\S]*?)<\/div>/)[1];
 assert.match(dates, /작성 <time datetime="2026-10-01T14:00:00\+09:00">/);
 assert.match(dates, /수정 <time datetime="2026-10-06T09:15:00\+09:00">/);
 assert.ok(html.indexOf("<h1>") < html.indexOf('class="article-meta"'));
-assert.ok(html.indexOf('class="article-meta"') < html.indexOf('class="article-lead"'));
+assert.ok(html.indexOf('class="article-meta"') < html.indexOf('class="article-body"'));
 for (const updated of [undefined, document.date, "2026-10-01T18:00:00+09:00", "2026-09-30"]) {
   assert.doesNotMatch(render({ ...document, updated }).match(/<div class="article-meta">([\s\S]*?)<\/div>/)[1], /수정/);
 }

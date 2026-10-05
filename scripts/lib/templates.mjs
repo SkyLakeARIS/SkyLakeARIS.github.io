@@ -79,11 +79,14 @@ function documentSearchText(document) {
 
 function renderToc(headings) {
   if (!headings.length) return "";
+  const baseLevel = Math.min(...headings.map(heading => heading.level));
   return (
     '<nav class="toc-links" aria-label="글 내부 목차">' +
-      headings.map(heading =>
-        '<a class="toc-level-' + heading.level + '" href="#' + escapeHtml(heading.id) + '">' + escapeHtml(heading.text) + "</a>"
-      ).join("") +
+      headings.map(heading => {
+        const depth = heading.level - baseLevel;
+        return '<a class="toc-level-' + heading.level + (depth ? ' toc-subheading' : '') +
+          '" style="--toc-depth:' + depth + '" href="#' + escapeHtml(heading.id) + '">' + escapeHtml(heading.text) + "</a>";
+      }).join("") +
     "</nav>"
   );
 }
@@ -303,7 +306,6 @@ export function articleHtml(document, documents, previous, next, analyticsEnable
         draftBanner +
         "<h1>" + escapeHtml(document.title) + "</h1>" +
         '<div class="article-meta">' + articleDatesHtml(document) + '<span>읽는 시간 ' + document.minutes + "분</span></div>" +
-        '<p class="article-lead">' + escapeHtml(document.description) + "</p>" +
         (headings.length ? '<details class="top-toc" open><summary>이 글의 목차</summary>' + toc + "</details>" : "") +
         (headings.length ? '<details class="article-toc-mobile"><summary>현재 글 목차</summary>' + toc + "</details>" : "") +
         '<div class="article-body">' + document.html + "</div>" +

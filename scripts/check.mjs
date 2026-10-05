@@ -78,6 +78,16 @@ for (const filePath of htmlFiles) {
   }
 }
 
+for (const filePath of files.filter(file => path.extname(file).toLowerCase() === ".css")) {
+  const css = await fs.readFile(filePath, "utf8");
+  for (const [, value] of css.matchAll(/url\(\s*["']?([^"'\s)]+)["']?\s*\)/g)) {
+    const target = localTarget(value);
+    if (target && !(await exists(target))) {
+      failures.push(path.relative(dist, filePath) + " -> " + value);
+    }
+  }
+}
+
 const resumeHtml = await fs.readFile(path.join(dist, "seobkim", "index.html"), "utf8");
 if (!resumeHtml.includes('name="robots" content="noindex,follow"')) {
   failures.push("seobkim/index.html: noindex가 없습니다.");

@@ -33,7 +33,8 @@ const MIME_TYPES = {
   ".webp": "image/webp",
   ".avif": "image/avif",
   ".xml": "application/xml; charset=utf-8",
-  ".txt": "text/plain; charset=utf-8"
+  ".txt": "text/plain; charset=utf-8",
+  ".woff2": "font/woff2"
 };
 
 function safePath(root, requestPath) {
