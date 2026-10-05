@@ -107,7 +107,7 @@ export function dateValue(value) {
 
 export function normalizeDateValue(value) {
   if (!value) return "";
-  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  if (value instanceof Date) return value.toISOString();
   return String(value);
 }
 

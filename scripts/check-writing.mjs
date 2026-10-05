@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import vm from "node:vm";
 import matter from "gray-matter";
 import { articleHtml, renderDocumentTree } from "./lib/templates.mjs";
-import { sortDocuments } from "./lib/utils.mjs";
+import { CONTENT_DIR, buildDocumentRecord, dateValue, formatDate, sortDocuments } from "./lib/utils.mjs";
 
 const timers = new Map();
 let timerId = 0;
@@ -177,6 +177,26 @@ const newer = { ...document, title: "나중에 만든 글", date: "2026-10-03T14
 assert.deepEqual(sortDocuments([document, newer]).map(item => item.title), [newer.title, document.title]);
 const tree = renderDocumentTree([document, newer], "");
 assert.ok(tree.indexOf(newer.title) < tree.indexOf(document.title), "Modified dates must not change table of contents order");
+
+function dateFixture(title, date, updated = '"2026-10-02T00:05:00+09:00"') {
+  const raw = ["---", "title: " + title, "date: " + date, "updated: " + updated, "---", "본문"].join("\n");
+  return buildDocumentRecord(CONTENT_DIR + "/프로젝트/ModelViewer/" + title + ".md", raw, matter);
+}
+const unquotedDate = dateFixture("따옴표 없는 날짜", "2026-10-01T21:31:17+09:00", "2026-10-02T00:05:00+09:00");
+const quotedDate = dateFixture("따옴표 있는 날짜", '"2026-10-01T21:31:17+09:00"');
+assert.equal(dateValue(unquotedDate.date), dateValue(quotedDate.date), "YAML date objects must retain the same timestamp as quoted dates");
+assert.equal(dateValue(unquotedDate.updated), dateValue(quotedDate.updated), "Revision dates must retain their time too");
+assert.equal(formatDate(unquotedDate.updated), formatDate(quotedDate.updated), "Dates near midnight must display the same Korean day");
+const previousSecond = dateFixture("직전 글", '"2026-10-01T21:31:16+09:00"');
+const nextSecond = dateFixture("직후 글", '"2026-10-01T21:31:18+09:00"');
+const orderedDates = sortDocuments([unquotedDate, previousSecond, nextSecond]);
+assert.deepEqual(orderedDates.map(item => item.title), [nextSecond.title, unquotedDate.title, previousSecond.title]);
+const dateTree = renderDocumentTree(orderedDates, "");
+assert.ok(dateTree.indexOf(nextSecond.title) < dateTree.indexOf(unquotedDate.title));
+assert.ok(dateTree.indexOf(unquotedDate.title) < dateTree.indexOf(previousSecond.title));
+const dateOnly = dateFixture("날짜만 지정", "2026-10-01");
+assert.equal(dateValue(dateOnly.date), dateValue("2026-10-01"), "Date-only metadata must preserve its existing timestamp");
+
 plugin.cleanups.forEach(cleanup => cleanup());
 reloaded.cleanups.forEach(cleanup => cleanup());
 assert.equal(timers.size, 0);
