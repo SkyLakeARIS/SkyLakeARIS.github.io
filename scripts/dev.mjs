@@ -247,6 +247,7 @@ async function rebuild(reason) {
       console.log("Added frontmatter: " + filePath);
     }
     for (const warning of result.report.warnings) console.warn("Warning: " + warning);
+    for (const reference of result.report.unresolvedLinks) console.warn("Reference shown as text: " + reference);
     broadcastReload();
   } catch (error) {
     console.error("Build failed:", error);

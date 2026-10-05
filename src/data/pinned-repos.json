@@ -1,11 +1,5 @@
 [
   {
-    "name": "LootingSimulator",
-    "url": "https://github.com/SkyLakeARIS/LootingSimulator",
-    "description": "",
-    "language": "C++"
-  },
-  {
     "name": "ModelViewer",
     "url": "https://github.com/SkyLakeARIS/ModelViewer",
     "description": "모델뷰어",

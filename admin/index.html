@@ -559,7 +559,7 @@
           ? documents.map(item => documentRow(item, false)).join("")
           : '<tr><td colspan="4">아직 작성된 문서가 없습니다.</td></tr>';
 
-        const warnings = data.report.warnings || [];
+        const warnings = [...(data.report.warnings || []), ...(data.report.unresolvedLinks || [])];
         const releaseSummary = document.getElementById("release-summary");
         releaseSummary.textContent = !data.git.available
           ? "SETUP"

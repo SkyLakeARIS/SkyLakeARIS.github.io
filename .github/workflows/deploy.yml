@@ -5,9 +5,12 @@ on:
     branches:
       - main
   workflow_dispatch:
+  schedule:
+    - cron: '17 * * * *'
 
 permissions:
   contents: read
+  pages: read
 
 concurrency:
   group: github-pages
@@ -34,8 +37,24 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Verify GitHub Pages source
+        run: node scripts/check-pages.mjs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Sync GitHub pinned repositories
+        run: pnpm sync:pins
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Verify repository
         run: pnpm check:repo
+
+      - name: Verify deployment behavior
+        run: |
+          pnpm check:markdown
+          pnpm check:writing
+          pnpm check:deployment
 
       - name: Build site
         run: pnpm build

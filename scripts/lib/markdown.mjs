@@ -64,7 +64,7 @@ function removeBlockMarker(inline, match) {
   }
 }
 
-export function preprocessObsidian(body, document, documentLookup, assetByBase, warnings) {
+export function preprocessObsidian(body, document, documentLookup, assetByBase, warnings, unresolvedLinks = warnings) {
   let output = String(body);
 
   output = output.replace(/!\[\[([^\]]+)\]\]/g, (match, inside) => {
@@ -95,7 +95,7 @@ export function preprocessObsidian(body, document, documentLookup, assetByBase, 
       : document;
 
     if (!linkedDocument) {
-      warnings.push(document.sourceRel + ": 문서 링크를 찾지 못했습니다: " + target);
+      unresolvedLinks.push(document.sourceRel + ": 문서 링크를 찾지 못했습니다: " + target);
       return label;
     }
 

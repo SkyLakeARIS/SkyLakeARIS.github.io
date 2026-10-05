@@ -1,0 +1,14 @@
+# This project publishes only the dist artifact through GitHub Actions.
+# Keep source files and the local admin out of an accidental Jekyll deployment.
+exclude:
+  - admin
+  - content
+  - scripts
+  - src
+  - README.md
+  - package.json
+  - pnpm-lock.yaml
+  - site.cmd
+  - node_modules
+  - .local
+  - dist

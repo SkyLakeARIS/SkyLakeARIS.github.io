@@ -127,6 +127,9 @@ if (sitemapUrls.length !== expectedSitemapUrls.length) {
 }
 
 const report = JSON.parse(await fs.readFile(path.join(dist, "assets", "build-report.json"), "utf8"));
+for (const reference of report.unresolvedLinks || []) {
+  console.warn("공개되지 않은 문서 참조를 일반 텍스트로 표시했습니다: " + reference);
+}
 for (const warning of report.warnings || []) {
   failures.push("빌드 경고: " + warning);
 }

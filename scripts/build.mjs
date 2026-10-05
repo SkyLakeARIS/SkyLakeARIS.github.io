@@ -128,6 +128,7 @@ export async function buildSite(options = {}) {
   const analyticsEnabled = options.analyticsEnabled ?? !includeDrafts;
   const startedAt = Date.now();
   const warnings = [];
+  const unresolvedLinks = [];
   const frontmatterAdded = [];
 
   await fs.rm(DIST_DIR, { recursive: true, force: true });
@@ -163,7 +164,7 @@ export async function buildSite(options = {}) {
   const markdown = createMarkdownRenderer(assetByAbs, warnings);
 
   for (const document of visibleDocuments) {
-    const body = preprocessObsidian(document.body, document, lookup, assetByBase, warnings);
+    const body = preprocessObsidian(document.body, document, lookup, assetByBase, warnings, unresolvedLinks);
     const environment = { headings: [], currentDocument: document };
     document.html = markdown.render(body, environment);
     document.headings = environment.headings;
@@ -201,7 +202,8 @@ export async function buildSite(options = {}) {
     generatedAt: manifest.generatedAt,
     durationMs: Date.now() - startedAt,
     frontmatterAdded,
-    warnings
+    warnings,
+    unresolvedLinks
   };
 
   await writeText(
@@ -231,6 +233,7 @@ if (invokedDirectly) {
         console.log("Added frontmatter: " + filePath);
       }
       for (const warning of result.report.warnings) console.warn("Warning: " + warning);
+      for (const reference of result.report.unresolvedLinks) console.warn("Reference shown as text: " + reference);
     })
     .catch(error => {
       console.error(error);

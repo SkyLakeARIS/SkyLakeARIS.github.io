@@ -17,7 +17,7 @@ Obsidian의 Markdown 문서를 정적 HTML로 변환해 GitHub Pages에 배포�
 - 이력서용 `/seobkim/` 경로
 - GitHub Pages 자동 배포 workflow
 
-Cloudflare Web Analytics는 사이트 검토가 끝난 뒤 마지막 단계에서 추가합니다.
+Cloudflare Web Analytics는 공개 빌드에 포함되며, 통계 조회용 비밀 토큰은 로컬 관리자 서버에서만 사용합니다.
 
 ## 새 PC에서 시작
 
@@ -80,6 +80,7 @@ Windows x64와 ARM64를 지원합니다. 시스템에 Node.js나 pnpm을 설치�
 - `build:preview`: 초안을 포함한 일회성 빌드
 - `check`: 생성된 사이트의 링크, 공개 범위와 메타데이터 검사
 - `check:writing`: 수정일 자동 기록, 본문 보존, 날짜 표시와 작성일 정렬 검사
+- `check:deployment`: Pin 갱신과 삭제, 배포 소스 검사, 정기 갱신 설정과 Jekyll 제외 범위 검사
 - `check:repo`: 버전 고정, Git 제외 항목, JSON, PC 절대 경로 유출 검사
 - `format:content`: 머리말이 없는 모든 Markdown 파일에 기본 머리말 추가
 - `release:check`: 저장소 검사, 공개 빌드와 생성 사이트 검사를 순서대로 실행
@@ -153,6 +154,8 @@ Obsidian에서 이 프로젝트의 `content` 폴더를 Vault로 엽니다. Obsid
     ---
 
 `draft: true`인 문서는 개발 화면에는 표시되지만 공개 빌드에서는 제외됩니다. 자동 생성된 문서는 `draft: false`로 시작합니다.
+
+공개되지 않았거나 저장소에 없는 문서를 위키 링크로 참조하면 공개 화면에서는 표시 이름만 일반 텍스트로 보여줍니다. 빌드 보고서의 `unresolvedLinks`에 안내를 남기며, 이 참조만으로 배포를 중단하지 않습니다. 실제로 깨진 링크·이미지와 다른 빌드 경고는 계속 배포 검사에서 차단합니다.
 
 ## 이미지
 
@@ -239,6 +242,10 @@ GitHub에 Push하기 전에 실행합니다.
 
 기본 데이터는 `src/data/pinned-repos.json`에 있습니다.
 
+GitHub Actions는 배포 전에 GitHub의 현재 Pin 목록을 조회합니다. 공개 저장소만 GitHub의 Pin 순서대로 표시하며, Pin에서 제거한 저장소도 함께 제거합니다. 별도의 개인 토큰 등록 없이 Actions가 제공하는 `GITHUB_TOKEN`을 빌드 단계에서만 사용합니다.
+
+Pin 변경은 저장소 Push를 발생시키지 않으므로, 한 시간 간격의 정기 배포도 실행합니다. GitHub 작업 대기 시간에 따라 반영이 지연될 수 있습니다. 바로 갱신하려면 **Actions → Deploy GitHub Pages → Run workflow**를 실행합니다. 로컬 미리보기는 저장소에 저장된 기본 데이터를 사용합니다.
+
 고정 저장소 정보를 갱신할 때 현재 터미널에만 `GITHUB_TOKEN`을 설정한 뒤 실행합니다.
 
     .\site.cmd sync:pins
@@ -250,6 +257,8 @@ GitHub에 Push하기 전에 실행합니다.
 저장소 이름은 `SkyLakeARIS.github.io`를 사용합니다. 현재 프로젝트 폴더를 그대로 Git 저장소로 만들면 됩니다.
 
 처음 Push한 뒤 GitHub 저장소의 **Settings → Pages → Build and deployment → Source**를 **GitHub Actions**로 선택합니다. `main` 브랜치에 Push하면 `.github/workflows/deploy.yml`이 공개 빌드와 검사를 수행한 뒤 배포합니다.
+
+배포 소스가 잘못 설정되면 Actions가 빌드 전에 오류로 안내합니다. `_config.yml`은 Jekyll을 실수로 실행했을 때 관리자·문서 원본·개발 소스가 홈페이지 경로로 배포되지 않도록 제외합니다. 정상 배포는 `dist` 산출물만 사용합니다.
 
 ## 관리자 화면
 

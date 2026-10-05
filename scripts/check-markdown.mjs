@@ -49,6 +49,25 @@ assert.match(html, /<p id="buffer-lifetime" class="block-target">/);
 assert.doesNotMatch(html, /\^buffer-lifetime/);
 assert.deepEqual(warnings, []);
 
+const unresolvedLinks = [];
+const unpublishedReference = preprocessObsidian(
+  "[[아직 공개하지 않은 문서|관련 개념]]",
+  currentDocument,
+  lookup,
+  new Map(),
+  warnings,
+  unresolvedLinks
+);
+assert.equal(unpublishedReference, "관련 개념");
+assert.doesNotMatch(markdown.render(unpublishedReference), /<a\b/);
+assert.equal(unresolvedLinks.length, 1);
+assert.deepEqual(warnings, []);
+
+const missingAssetWarnings = [];
+preprocessObsidian("![[missing.png]]", currentDocument, lookup, new Map(), missingAssetWarnings, []);
+assert.equal(missingAssetWarnings.length, 1);
+assert.match(missingAssetWarnings[0], /이미지를 찾지 못했습니다/);
+
 const highlightedCode = markdown.render([
   '```cpp {hl-yellow="2-3" hl-red="5"}',
   "int first = 1;",
