@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { analyticsPeriod, decorateAnalytics, normalizeAnalyticsPath } from "./analytics-model.mjs";
 
 const GRAPHQL_ENDPOINT = "https://api.cloudflare.com/client/v4/graphql";
 const API_ENDPOINT = "https://api.cloudflare.com/client/v4";
@@ -59,11 +60,6 @@ function getConfiguration() {
   return { ...values, missing };
 }
 
-function roundMetric(value) {
-  const number = Number(value);
-  return Number.isFinite(number) ? Math.max(0, Math.round(number)) : 0;
-}
-
 function sanitizeError(error, token) {
   const message = error instanceof Error ? error.message : String(error);
   return token ? message.replaceAll(token, "[REDACTED]") : message;
@@ -109,145 +105,70 @@ async function resolveSiteTag(configuration, force) {
   return site.site_tag;
 }
 export async function getCloudflareAnalytics(options = {}) {
-  const days = Math.min(90, Math.max(1, Number(options.days) || 30));
+  const period = analyticsPeriod(options.days, options.now);
+  const pathFilter = String(options.path || "").slice(0, 600);
+  const excludeBots = options.excludeBots !== false;
   const force = Boolean(options.force);
   const configuration = getConfiguration();
-
-  if (configuration.missing.length) {
-    return {
-      status: "unconfigured",
-      days,
-      host: configuration.requestHost,
-      missing: configuration.missing
-    };
-  }
-
+  const base = { ...period, path: pathFilter, excludeBots, host: configuration.requestHost };
+  if (configuration.missing.length) return { ...base, status: "unconfigured", missing: configuration.missing };
   if (!/^[a-f0-9]{32}$/i.test(configuration.accountTag)) {
-    return {
-      status: "error",
-      days,
-      host: configuration.requestHost,
-      error: "Cloudflare 계정 ID 형식이 올바르지 않습니다. 대시보드에서 복사한 32자리 ID를 입력해 주세요."
-    };
+    return { ...base, status: "error", error: "Cloudflare 계정 ID 형식이 올바르지 않습니다. 32자리 계정 ID를 확인해 주세요." };
   }
-
-  let siteTag;
   try {
-    siteTag = await resolveSiteTag(configuration, force);
-  } catch (error) {
-    return {
-      status: "error",
-      days,
-      host: configuration.requestHost,
-      error: sanitizeError(error, configuration.apiToken)
-    };
-  }
-
-  const cacheKey = [days, configuration.accountTag, siteTag, configuration.requestHost].join(":");
-  const cached = cache.get(cacheKey);
-  if (!force && cached && Date.now() - cached.cachedAt < CACHE_TTL_MS) {
-    return { ...cached.value, cached: true };
-  }
-
-  const end = new Date();
-  const start = new Date(end.getTime() - days * 24 * 60 * 60 * 1000);
-  const query = `
-    query PageAnalytics(
-      $accountTag: string!,
-      $siteTag: string!,
-      $requestHost: string!,
-      $start: Time!,
-      $end: Time!
-    ) {
-      viewer {
-        accounts(filter: { accountTag: $accountTag }) {
-          pages: rumPageloadEventsAdaptiveGroups(
-            limit: 1000
-            orderBy: [count_DESC]
-            filter: {
-              siteTag: $siteTag
-              requestHost: $requestHost
-              datetime_geq: $start
-              datetime_leq: $end
-            }
-          ) {
-            count
-            sum {
-              visits
-            }
-            dimensions {
-              requestPath
-            }
-          }
-        }
-      }
+    const siteTag = await resolveSiteTag(configuration, force);
+    const cacheKey = [period.days, period.start, pathFilter, excludeBots, configuration.accountTag, siteTag, configuration.requestHost].join(":");
+    const cached = cache.get(cacheKey);
+    if (!force && cached && Date.now() - cached.cachedAt < CACHE_TTL_MS) {
+      return decorateAnalytics({ ...cached.value, cached: true }, options.documents, options.resumePath);
     }
-  `;
-
-  try {
+    const common = `siteTag: $siteTag, requestHost: $requestHost${excludeBots ? ", bot: 0" : ""}`;
+    const current = common + ", datetime_geq: $start, datetime_lt: $end";
+    const previous = common + ", datetime_geq: $previousStart, datetime_lt: $previousEnd";
+    const selected = current + (pathFilter ? ", requestPath_in: $paths" : "");
+    const paths = pathFilter ? [...new Set([pathFilter, normalizeAnalyticsPath(pathFilter), encodeURI(normalizeAnalyticsPath(pathFilter))])] : [];
+    const query = `query PageAnalytics(
+      $accountTag: string!, $siteTag: string!, $requestHost: string!,
+      $start: Time!, $end: Time!, $previousStart: Time!, $previousEnd: Time!
+      ${pathFilter ? ", $paths: [string!]" : ""}
+    ) { viewer { accounts(filter: {accountTag: $accountTag}) {
+      pages: rumPageloadEventsAdaptiveGroups(limit: 10000, orderBy: [count_DESC], filter: {${current}}) {
+        count sum {visits} dimensions {requestPath}
+      }
+      previousPages: rumPageloadEventsAdaptiveGroups(limit: 10000, orderBy: [count_DESC], filter: {${previous}}) {
+        count sum {visits} dimensions {requestPath}
+      }
+      totals: rumPageloadEventsAdaptiveGroups(limit: 1, filter: {${current}}) { count sum {visits} }
+      previousTotals: rumPageloadEventsAdaptiveGroups(limit: 1, filter: {${previous}}) { count sum {visits} }
+      trend: rumPageloadEventsAdaptiveGroups(limit: 10000, orderBy: [datetimeHour_ASC], filter: {${selected}}) {
+        count sum {visits} dimensions {datetimeHour}
+      }
+      referrers: rumPageloadEventsAdaptiveGroups(limit: 100, orderBy: [count_DESC], filter: {${selected}}) {
+        count sum {visits} dimensions {refererHost}
+      }
+    } } }`;
     const response = await fetch(GRAPHQL_ENDPOINT, {
       method: "POST",
-      headers: {
-        "Authorization": "Bearer " + configuration.apiToken,
-        "Content-Type": "application/json",
-        "X-Rate-Limit-Type": "account-based"
-      },
-      body: JSON.stringify({
-        query,
-        variables: {
-          accountTag: configuration.accountTag,
-          siteTag,
-          requestHost: configuration.requestHost,
-          start: start.toISOString(),
-          end: end.toISOString()
-        }
-      }),
-      signal: AbortSignal.timeout(15000)
+      headers: { Authorization: "Bearer " + configuration.apiToken, "Content-Type": "application/json", "X-Rate-Limit-Type": "account-based" },
+      body: JSON.stringify({ query, variables: {
+        accountTag: configuration.accountTag, siteTag, requestHost: configuration.requestHost,
+        start: period.start, end: period.end, previousStart: period.previousStart, previousEnd: period.previousEnd,
+        ...(pathFilter ? { paths } : {})
+      } }),
+      signal: AbortSignal.timeout(20000)
     });
-
     const payload = await response.json().catch(() => null);
-    if (!response.ok) {
-      throw new Error("Cloudflare API 응답 오류 (" + response.status + ")");
-    }
+    if (!response.ok) throw new Error("Cloudflare API 응답 오류 (" + response.status + ")");
     if (!payload) throw new Error("Cloudflare API가 JSON을 반환하지 않았습니다.");
-    if (payload.errors?.length) {
-      throw new Error(payload.errors.map(item => item.message).join(" / "));
-    }
-
-    const groups = payload.data?.viewer?.accounts?.[0]?.pages;
-    if (!Array.isArray(groups)) {
+    if (payload.errors?.length) throw new Error(payload.errors.map(item => item.message).join(" / "));
+    const data = payload.data?.viewer?.accounts?.[0];
+    if (!["pages", "previousPages", "totals", "previousTotals", "trend", "referrers"].every(key => Array.isArray(data?.[key]))) {
       throw new Error("Cloudflare Web Analytics 데이터셋을 사용할 수 없습니다.");
     }
-
-    const pages = groups
-      .map(group => ({
-        path: group.dimensions?.requestPath || "/",
-        pageViews: roundMetric(group.count),
-        visits: roundMetric(group.sum?.visits)
-      }))
-      .filter(page => page.pageViews > 0)
-      .sort((a, b) => b.pageViews - a.pageViews || a.path.localeCompare(b.path));
-
-    const value = {
-      status: "ready",
-      days,
-      host: configuration.requestHost,
-      start: start.toISOString(),
-      end: end.toISOString(),
-      fetchedAt: new Date().toISOString(),
-      totalPageViews: pages.reduce((sum, page) => sum + page.pageViews, 0),
-      totalVisits: pages.reduce((sum, page) => sum + page.visits, 0),
-      pages,
-      cached: false
-    };
+    const value = { ...base, status: "ready", data, fetchedAt: new Date().toISOString(), cached: false };
     cache.set(cacheKey, { cachedAt: Date.now(), value });
-    return value;
+    return decorateAnalytics(value, options.documents, options.resumePath);
   } catch (error) {
-    return {
-      status: "error",
-      days,
-      host: configuration.requestHost,
-      error: sanitizeError(error, configuration.apiToken)
-    };
+    return { ...base, status: "error", error: sanitizeError(error, configuration.apiToken) };
   }
 }

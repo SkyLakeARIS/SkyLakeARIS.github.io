@@ -178,6 +178,7 @@ export async function buildSite(options = {}) {
     siteStyles.trimEnd() + "\n\n" + highlightStyles.trim() + "\n"
   );
   await writeText(path.join(DIST_DIR, "assets", "site.js"), await fs.readFile(SCRIPT_FILE, "utf8"));
+  await writeText(path.join(DIST_DIR, "assets", "analytics.js"), await fs.readFile(new URL("../src/scripts/analytics.js", import.meta.url), "utf8"));
   await writeText(path.join(DIST_DIR, ".nojekyll"), "");
 
   const pinnedRepositories = JSON.parse(await fs.readFile(PINNED_FILE, "utf8"));

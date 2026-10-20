@@ -69,9 +69,12 @@ for (const filePath of htmlFiles) {
     failures.push(relativeHtml + ": Open Graph URL이 canonical과 일치하지 않습니다.");
   }
 
-  const beaconMatches = html.match(/static\.cloudflareinsights\.com\/beacon\.min\.js/g) || [];
-  if (beaconMatches.length !== 1) {
-    failures.push(relativeHtml + ": Cloudflare Web Analytics Beacon이 정확히 한 번 포함되지 않았습니다.");
+  const analyticsMatches = html.match(/id="site-analytics-config"/g) || [];
+  if (analyticsMatches.length !== 1 || !html.includes('src="/assets/analytics.js"')) {
+    failures.push(relativeHtml + ": 본인 방문 제외를 지원하는 통계 로더가 정확히 한 번 포함되지 않았습니다.");
+  }
+  if (html.includes('src="https://static.cloudflareinsights.com/beacon.min.js"')) {
+    failures.push(relativeHtml + ": 본인 방문 제외 전에 Beacon을 직접 불러오고 있습니다.");
   }
   if (!html.includes(site.cloudflareWebAnalyticsToken)) {
     failures.push(relativeHtml + ": Cloudflare Web Analytics 토큰이 사이트 설정과 일치하지 않습니다.");
@@ -95,6 +98,9 @@ if (!resumeHtml.includes('name="robots" content="noindex,follow"')) {
 
 if (await exists(path.join(dist, "__admin"))) {
   failures.push("관리자 화면이 공개 빌드에 포함됐습니다.");
+}
+for (const privateDirectory of ["workers", "scripts", ".local", "admin"]) {
+  if (await exists(path.join(dist, privateDirectory))) failures.push(privateDirectory + "가 공개 빌드에 포함됐습니다.");
 }
 
 const manifest = JSON.parse(await fs.readFile(path.join(dist, "assets", "content-manifest.json"), "utf8"));

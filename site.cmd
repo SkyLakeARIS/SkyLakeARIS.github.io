@@ -6,6 +6,9 @@ set "site_exit_code=0"
 set "powershell_path=%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe"
 if not exist "%powershell_path%" set "powershell_path=powershell.exe"
 
+if /I "%~1"=="stop" goto site_server
+if /I "%~1"=="status" goto site_server
+
 "%powershell_path%" -NoLogo -NoProfile -ExecutionPolicy Bypass -File "scripts\setup-tools.ps1"
 if errorlevel 1 (
   set "site_exit_code=%ERRORLEVEL%"
@@ -31,11 +34,18 @@ if errorlevel 1 (
   goto site_end
 )
 
+if /I "%~1"=="start" goto site_server
+
 if "%~1"=="" (
   call ".local\pnpm.cmd" dev
 ) else (
   call ".local\pnpm.cmd" %*
 )
+set "site_exit_code=%ERRORLEVEL%"
+goto site_end
+
+:site_server
+"%powershell_path%" -NoLogo -NoProfile -ExecutionPolicy Bypass -File "scripts\local-server.ps1" -Action "%~1"
 set "site_exit_code=%ERRORLEVEL%"
 
 :site_end

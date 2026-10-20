@@ -5,6 +5,8 @@ exclude:
   - content
   - scripts
   - src
+  - workers
+  - env.example
   - README.md
   - package.json
   - pnpm-lock.yaml

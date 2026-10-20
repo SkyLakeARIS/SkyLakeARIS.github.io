@@ -52,6 +52,16 @@ Windows x64와 ARM64를 지원합니다. 시스템에 Node.js나 pnpm을 설치�
 
 개발 서버는 현재 컴퓨터의 `127.0.0.1`에만 연결됩니다. 종료할 때 터미널에서 `Ctrl+C`를 누릅니다.
 
+### 터미널을 닫아도 미리보기와 관리자 유지하기
+
+    .\site.cmd start
+    .\site.cmd status
+    .\site.cmd stop
+
+`start`는 같은 개발 서버를 숨겨진 백그라운드 프로세스로 실행합니다. 실행한 터미널이나 Codex를 닫아도 미리보기와 관리자 페이지를 사용할 수 있고, 문서를 수정하면 자동으로 다시 빌드됩니다. 이미 실행 중이면 중복 실행하지 않습니다. `status`로 실행 상태를 확인하고, `stop`으로 이 저장소에서 실행한 백그라운드 서버를 종료합니다. 기존 `dev` 서버와는 같은 포트를 사용하므로, `dev`를 실행 중이면 먼저 `Ctrl+C`로 종료합니다.
+
+PC가 켜져 있는 동안 유지되며 재부팅 후에는 `start`를 다시 실행해야 합니다. PC가 꺼져 있어도 공개 홈페이지는 GitHub Pages에서 계속 제공되고, 방문 통계 수집은 Cloudflare에서 계속 진행됩니다. 로컬 관리자 화면을 열 때만 이 서버가 필요합니다. 서버 PID와 로그는 Git에서 제외되는 `.local`에 저장됩니다. 노트북에서도 저장소를 받은 뒤 같은 명령을 사용할 수 있으며, 통계 조회용 `.env.local`은 각 컴퓨터에 따로 설정합니다.
+
 ## PC와 노트북에서 이어서 작업
 
 1. 현재 PC에서 SourceTree로 변경 파일을 커밋하고 Push합니다.
@@ -66,22 +76,32 @@ Windows x64와 ARM64를 지원합니다. 시스템에 Node.js나 pnpm을 설치�
 
     .\site.cmd setup
     .\site.cmd dev
+    .\site.cmd start
+    .\site.cmd status
+    .\site.cmd stop
     .\site.cmd build
     .\site.cmd build:preview
     .\site.cmd check
     .\site.cmd check:repo
+    .\site.cmd check:analytics
+    .\site.cmd setup:analytics
     .\site.cmd format:content
     .\site.cmd release:check
     .\site.cmd sync:pins
 
 - `setup`: 로컬 도구와 종속성 준비
 - `dev`: 초안을 포함해 감시 빌드하고 로컬 서버 실행
+- `start`: 터미널을 닫아도 유지되는 백그라운드 미리보기·관리자 서버 실행
+- `status`: 백그라운드 서버 실행 상태 확인
+- `stop`: 이 저장소에서 실행한 백그라운드 서버 종료
 - `build`: 초안을 제외한 공개 사이트 생성
 - `build:preview`: 초안을 포함한 일회성 빌드
 - `check`: 생성된 사이트의 링크, 공개 범위와 메타데이터 검사
 - `check:writing`: 수정일 자동 기록, 본문 보존, 날짜 표시와 작성일 정렬 검사
 - `check:deployment`: Pin 갱신과 삭제, 배포 소스 검사, 정기 갱신 설정과 Jekyll 제외 범위 검사
 - `check:repo`: 버전 고정, Git 제외 항목, JSON, PC 절대 경로 유출 검사
+- `check:analytics`: 날짜·문서 집계, 본인 방문 제외, 비공개 기록, 추가 수집과 배포 동작 검사
+- `setup:analytics`: Cloudflare Worker와 D1을 만들고 추가 통계 연결
 - `format:content`: 머리말이 없는 모든 Markdown 파일에 기본 머리말 추가
 - `release:check`: 저장소 검사, 공개 빌드와 생성 사이트 검사를 순서대로 실행
 - `sync:pins`: GitHub 고정 저장소 정보 갱신
@@ -284,11 +304,21 @@ Pin 변경은 저장소 Push를 발생시키지 않으므로, 한 시간 간격�
 - 빌드 경고와 공개 준비 상태
 - Git 변경 파일 또는 저장소 생성 전 상태
 - Obsidian 첨부 이미지 목록과 파일 크기
-- Cloudflare Web Analytics의 기간별 전체 조회수와 페이지 경로별 조회수
+- Cloudflare Web Analytics의 기간별 전체 조회수, 문서별 조회수와 일별 추이
 
 ## 방문 통계
 
-관리자 화면에는 Cloudflare Web Analytics의 페이지별 조회수 표시 기능이 준비되어 있습니다. 공개 사이트에 통계 수집용 Beacon을 연결하기 전에는 `OFF`로 표시됩니다.
+관리자 화면의 **방문 통계** 메뉴에서 확인합니다.
+
+- 최근 7일·30일·90일 조회수와 이전 같은 기간의 조회수 비교
+- 문서 제목으로 표시한 페이지별 조회수와 프로젝트·학습 분류
+- 한국 시간 기준 일별 그래프와 페이지 선택
+- `/seobkim/` 이력서 링크 조회수
+- 유입·이동 경로, 봇 제외, 문서별 CSV 저장
+- 이력서 제출일 기록과 그래프 표시
+- 본인 브라우저 방문 제외 설정
+
+오늘 진행 중인 수치도 포함합니다. 이전 기간은 선택한 기간 바로 앞의 같은 일수입니다. 조회는 반복 접속·새로고침을 포함하고, **방문 시작**은 순방문자 수가 아닙니다. 샘플링이나 스크립트 차단으로 집계가 달라질 수 있습니다. 접속 발생만으로 특정 회사나 사람이 읽었는지는 확인할 수 없습니다.
 
 사이트 배포 후 Cloudflare에서 Web Analytics 사이트를 생성하고, 프로젝트 루트에 Git에서 제외되는 `.env.local` 파일을 만듭니다.
 
@@ -297,9 +327,42 @@ Pin 변경은 저장소 Push를 발생시키지 않으므로, 한 시간 간격�
     CLOUDFLARE_API_TOKEN=읽기 전용 API 토큰
     CLOUDFLARE_ANALYTICS_HOST=skylakearis.github.io
 
-API 토큰에는 **Account → Account Analytics → Read**와 **Account → Account Settings → Read** 권한만 부여합니다. Site Tag는 등록된 hostname을 기준으로 자동 조회합니다. `.env.local`은 `.gitignore`에 포함되어 있으므로 커밋되지 않습니다. 값을 변경한 뒤 `site.cmd dev`를 다시 실행하면 관리자 화면에서 최근 7일, 30일, 90일 통계를 확인할 수 있습니다.
+API 토큰에는 **Account → Account Analytics → Read**와 **Account → Account Settings → Read** 권한만 부여합니다. Site Tag를 비워 두면 등록된 hostname으로 자동 조회합니다. `.env.local`은 Git에서 제외됩니다. 값을 변경한 뒤 로컬 서버를 재시작합니다. 백그라운드 서버는 `site.cmd stop`, `site.cmd start` 순서로 실행합니다.
 
-관리자 API는 토큰을 로컬 Node.js 프로세스에서만 사용합니다. 브라우저 응답과 공개 `dist`에는 계정 ID, Site Tag와 API 토큰이 포함되지 않습니다. 실제 방문 수집을 시작하는 Beacon 코드는 Cloudflare 사이트 생성 후 마지막 연결 단계에서 공통 페이지 양식에 추가합니다.
+관리자 API는 비밀 토큰을 로컬 Node.js 프로세스에서만 사용합니다. 브라우저 응답과 공개 `dist`에는 계정 ID, Site Tag와 비밀 API 토큰을 넣지 않습니다. 공개 페이지의 Beacon 토큰과 추가 수집 서버 주소는 공개 설정입니다. 로컬 미리보기에서는 수집 스크립트를 실행하지 않습니다.
+
+### 제출일 기록과 본인 방문 제외
+
+제출일과 제목을 입력하면 그래프에 주황 점으로 표시됩니다. 기록은 `.local/analytics-notes.json`에만 저장되며 공개 사이트, CSV와 Git에 포함되지 않습니다. PC와 노트북 사이에서도 자동 동기화되지 않습니다.
+
+관리자의 **이 브라우저 방문 제외** 링크는 공개 사이트를 열어 해당 브라우저에 설정을 저장합니다. 이후 그 브라우저에서는 Beacon과 추가 수집 모두 실행하지 않습니다. 노트북이나 다른 브라우저에도 각각 설정해야 합니다. 과거 통계는 바뀌지 않습니다. 공개 사이트에 새 수집 스크립트가 배포된 후 사용할 수 있습니다.
+
+### 본문과 저장소 링크 추가 수집
+
+Cloudflare Web Analytics는 임의의 클릭·스크롤 이벤트를 지원하지 않으므로 별도 Worker와 D1을 사용합니다. 연결 전에는 관리자에 **추가 수집 서버 연결 전**으로 표시됩니다.
+
+- 본문이 보이고 탭이 활성 상태였던 시간이 합계 30초 이상인 횟수
+- 화면에 본문의 50%·90% 지점까지 도달한 횟수
+- 본인 GitHub 저장소 링크를 클릭한 횟수
+
+같은 페이지에서 각 이벤트는 한 번 기록하고, 저장소 클릭은 저장소별로 한 번 기록합니다. 스크롤은 본문이 화면에 표시된 지점 기준이므로 짧은 글에서는 처음부터 90%에 도달할 수 있습니다. 수집 저장소에는 한국 날짜·페이지 경로·이벤트 종류·저장소 주소별 합계만 저장합니다. IP, 사용자 ID와 방문자별 이동 기록은 저장하지 않습니다.
+
+#### 최초 연결
+
+1. Cloudflare의 **My Profile → API Tokens → Create Token → Create Custom Token**에서 이 계정에 한정한 전용 토큰을 만듭니다. 권한은 **Account → Workers Scripts → Edit**, **Account → D1 → Edit**입니다.
+2. Workers를 처음 사용한다면 **Workers & Pages**에서 `workers.dev` 도메인을 설정합니다.
+3. 프로젝트의 `.env.local`에 `CLOUDFLARE_DEPLOY_TOKEN=전용 토큰`을 추가합니다. 기존 통계 조회용 토큰은 유지합니다.
+4. 프로젝트 폴더에서 실행합니다.
+
+        .\site.cmd setup:analytics
+
+명령은 `seobkim-engagement` Worker와 D1을 만들고, 조회용 비밀 토큰을 `.env.local`에 저장합니다. 공개 주소만 `src/config/site.mjs`의 `engagementEndpoint`에 기록합니다. `.local/engagement-deployment.json`은 다시 배포할 때 기존 저장소를 재사용하는 상태 파일입니다. 이 파일과 토큰을 공개하거나 커밋하지 않습니다.
+
+로컬 서버를 재시작하고 사이트 설정·수집 코드 변경을 커밋·푸시하면 공개 페이지에서 추가 수집을 시작합니다. PC가 꺼져 있어도 수집은 Cloudflare에서 계속됩니다. Worker 코드를 나중에 수정하면 같은 명령으로 다시 배포합니다. 최초 배포 PC에서 실행하거나 기존 배포 상태와 읽기 토큰을 안전하게 옮긴 PC를 사용합니다.
+
+노트북에서는 다시 배포할 필요 없이 `.env.local`에 기존 조회 설정과 `CLOUDFLARE_ENGAGEMENT_URL`, `CLOUDFLARE_ENGAGEMENT_READ_TOKEN`을 별도로 설정하면 통계를 조회할 수 있습니다. 배포 토큰은 조회에 필요하지 않습니다. 예시 키 목록은 `env.example`에 있습니다.
+
+Worker와 D1은 무료 플랜 범위에서 사용할 수 있으며 사용 한도가 있습니다. [Workers 요금](https://developers.cloudflare.com/workers/platform/pricing/)과 [D1 요금](https://developers.cloudflare.com/d1/platform/pricing/)을 확인합니다. 기존 Cloudflare 플랜은 이 명령으로 변경하지 않습니다.
 
 ## 초기화 문제 해결
 

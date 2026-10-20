@@ -11,6 +11,7 @@ export default {
   linkedinUrl: "https://www.linkedin.com/in/seob-kim/",
   resumePath: "seobkim",
   cloudflareWebAnalyticsToken: "58f54805693542e3aad8bb3fa88ddd93",
+  engagementEndpoint: "https://seobkim-engagement.seobkim.workers.dev",
   sectionTitles: {
     Projects: "Projects",
     Study: "Study",

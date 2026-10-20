@@ -149,11 +149,12 @@ function footerHtml() {
 }
 
 function analyticsHtml(enabled) {
-  if (!enabled || !site.cloudflareWebAnalyticsToken) return "";
-  const payload = escapeHtml(JSON.stringify({ token: site.cloudflareWebAnalyticsToken }));
+  if (!enabled) return "";
+  const payload = JSON.stringify({ token: site.cloudflareWebAnalyticsToken, engagementEndpoint: site.engagementEndpoint || "", githubUser: site.githubUser })
+    .replaceAll("<", "\\u003c").replaceAll("&", "\\u0026");
   return (
-    '<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js" ' +
-    "data-cf-beacon='" + payload + "'></script>"
+    '<script type="application/json" id="site-analytics-config">' + payload + '</script>' +
+    '<script defer src="/assets/analytics.js"></script>'
   );
 }
 
@@ -178,51 +179,61 @@ export function homeHtml(documents, pinnedRepositories, noindex = false, analyti
     )
     .slice(0, 6);
 
+  const repositoryIcon = '<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M5 4h13v16H5a2 2 0 0 1 0-4h13M5 4a2 2 0 0 0-2 2v12M7 7h7"/></svg>';
   const repoCards = pinnedRepositories.map(repository =>
-    '<a class="repo-card" href="' + escapeHtml(repository.url) + '" target="_blank" rel="noreferrer">' +
-      "<strong>" + escapeHtml(repository.name) + "</strong>" +
-      '<span class="repo-language">' + escapeHtml(repository.language || "") + "</span>" +
-      (repository.description ? "<p>" + escapeHtml(repository.description) + "</p>" : "") +
-    "</a>"
-  ).join("");
+    '<a class="home-repository" href="' + escapeHtml(repository.url) + '" target="_blank" rel="noreferrer">' +
+      '<span class="home-repo-icon">' + repositoryIcon + '</span>' +
+      '<span class="home-repo-content"><strong>' + escapeHtml(repository.name) + '</strong>' +
+        (repository.description ? '<span>' + escapeHtml(repository.description) + '</span>' : '') +
+      '</span>' +
+      (repository.language ? '<span class="home-language">' + escapeHtml(repository.language) + '</span>' : '') +
+      '<span class="home-outbound" aria-hidden="true">↗</span>' +
+    '</a>'
+  ).join('');
 
-  const recentCards = recent.map(document =>
-    '<a class="doc-card" href="' + escapeHtml(document.url) + '">' +
-      '<span class="doc-card-type">' + escapeHtml(document.category || "Document") + "</span>" +
-      "<h2>" + escapeHtml(document.title) + "</h2>" +
-      "<p>" + escapeHtml(document.description) + "</p>" +
-      '<span class="doc-card-meta"><span>' + escapeHtml(formatDate(document.updated || document.date)) + '</span><span>' + document.minutes + "분</span></span>" +
-    "</a>"
-  ).join("");
+  const recentRows = recent.map(document => {
+    const showUpdated = document.updated && formatDate(document.updated) !== formatDate(document.date);
+    return (
+      '<li><a class="home-document" href="' + escapeHtml(document.url) + '">' +
+        '<span class="home-document-content"><strong>' + escapeHtml(document.title) + '</strong>' +
+          '<span class="home-document-category">' + escapeHtml(document.category) +
+            (document.draft ? '<span class="tree-draft">초안</span>' : '') +
+            (showUpdated ? '<span class="home-updated">수정 ' + escapeHtml(formatDate(document.updated)) + '</span>' : '') +
+          '</span>' +
+        '</span>' +
+        '<time datetime="' + escapeHtml(document.date) + '" title="작성 날짜">' + escapeHtml(formatDate(document.date)) + '</time>' +
+        '<span class="home-document-arrow" aria-hidden="true">→</span>' +
+      '</a></li>'
+    );
+  }).join('');
 
   const content = (
     '<div class="home-shell">' +
-      '<section class="home-profile">' +
-        '<div class="profile-identity"><h1>' + escapeHtml(site.displayName) + '</h1>' +
-          '<p class="profile-name">' + escapeHtml(site.realName) + '</p>' +
-          '<p class="profile-role">' + escapeHtml(site.role) + '</p>' +
-          '<div class="profile-links">' +
-            '<a href="mailto:' + escapeHtml(site.email) + '">' + escapeHtml(site.email) + '</a>' +
-            '<a href="https://github.com/' + escapeHtml(site.githubUser) + '" target="_blank" rel="noreferrer">GitHub ↗</a>' +
-            '<a href="' + escapeHtml(site.linkedinUrl) + '" target="_blank" rel="noreferrer">LinkedIn ↗</a>' +
-          '</div>' +
+      '<section class="home-profile" aria-labelledby="profile-heading">' +
+        '<h1 id="profile-heading">' + escapeHtml(site.displayName) + '</h1>' +
+        '<div class="home-identity"><span>' + escapeHtml(site.realName) + '</span><span class="home-role">' + escapeHtml(site.role) + '</span></div>' +
+        '<div class="home-contact">' +
+          '<a href="mailto:' + escapeHtml(site.email) + '">' + escapeHtml(site.email) + '</a>' +
+          '<a href="https://github.com/' + escapeHtml(site.githubUser) + '" target="_blank" rel="noreferrer">GitHub <span aria-hidden="true">↗</span></a>' +
+          '<a href="' + escapeHtml(site.linkedinUrl) + '" target="_blank" rel="noreferrer">LinkedIn <span aria-hidden="true">↗</span></a>' +
         '</div>' +
-        (recent[0] ? '<a class="profile-status" href="' + escapeHtml(recent[0].url) + '" title="최근 문서: ' + escapeHtml(recent[0].title) + '">최근 문서 · <span>' + escapeHtml(recent[0].title) + '</span></a>' : "") +
       "</section>" +
-      '<section class="home-dashboard">' +
-        '<div class="home-outline">' +
-          '<div class="outline-head"><strong>문서</strong><a href="/docs/">전체 문서 보기 →</a></div>' +
+      '<div class="home-layout">' +
+        '<aside class="home-outline" aria-labelledby="outline-heading">' +
+          '<div class="home-section-heading"><h2 id="outline-heading">문서</h2><a href="/docs/">전체 보기 <span aria-hidden="true">↗</span></a></div>' +
           '<nav class="home-tree" aria-label="문서 목차">' + renderDocumentTree(documents, "", true) + "</nav>" +
-        "</div>" +
-        '<div class="repo-panel">' +
-          '<div class="repo-panel-head"><strong>Pinned repositories</strong><a href="https://github.com/' + escapeHtml(site.githubUser) + '" target="_blank" rel="noreferrer">GitHub 프로필 ↗</a></div>' +
-          '<div class="repo-list">' + repoCards + "</div>" +
-        "</div>" +
-      "</section>" +
-      '<section class="home-section">' +
-        '<div class="section-heading"><h2>최근 문서</h2><p>최근 작성하거나 갱신한 문서입니다.</p></div>' +
-        '<div class="card-grid">' + recentCards + "</div>" +
-      "</section>" +
+        "</aside>" +
+        '<div class="home-content">' +
+          '<section class="home-repositories" aria-labelledby="repositories-heading">' +
+            '<div class="home-section-heading"><h2 id="repositories-heading">고정 저장소</h2><a href="https://github.com/' + escapeHtml(site.githubUser) + '" target="_blank" rel="noreferrer">GitHub 프로필 <span aria-hidden="true">↗</span></a></div>' +
+            '<div class="home-repository-list">' + repoCards + "</div>" +
+          "</section>" +
+          '<section class="home-recent" aria-labelledby="recent-heading">' +
+            '<div class="home-section-heading"><h2 id="recent-heading">최근 글</h2><a href="/docs/">모든 문서 <span aria-hidden="true">→</span></a></div>' +
+            '<ul class="home-document-list">' + recentRows + "</ul>" +
+          "</section>" +
+        '</div>' +
+      '</div>' +
       footerHtml() +
     "</div>"
   );

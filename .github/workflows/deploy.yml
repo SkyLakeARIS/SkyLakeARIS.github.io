@@ -55,6 +55,7 @@ jobs:
           pnpm check:markdown
           pnpm check:writing
           pnpm check:deployment
+          pnpm check:analytics
 
       - name: Build site
         run: pnpm build

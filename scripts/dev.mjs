@@ -8,6 +8,9 @@ import { promisify } from "node:util";
 import chokidar from "chokidar";
 import { buildSite } from "./build.mjs";
 import { getCloudflareAnalytics, loadLocalEnvironment } from "./lib/cloudflare-analytics.mjs";
+import { createAnalyticsNotes } from "./lib/analytics-notes.mjs";
+import { getEngagementAnalytics } from "./lib/engagement-analytics.mjs";
+import site from "../src/config/site.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DIST_DIR = path.join(ROOT, "dist");
@@ -17,6 +20,7 @@ const HOST = "127.0.0.1";
 const eventClients = new Set();
 const execFileAsync = promisify(execFile);
 const MEDIA_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".avif"]);
+const analyticsNotes = createAnalyticsNotes(ROOT);
 
 await loadLocalEnvironment(ROOT);
 
@@ -141,8 +145,39 @@ async function sendAdminAnalytics(response, requestUrl) {
   const requestedDays = Number(requestUrl.searchParams.get("days") || 30);
   const days = [7, 30, 90].includes(requestedDays) ? requestedDays : 30;
   const force = requestUrl.searchParams.get("refresh") === "1";
-  const analytics = await getCloudflareAnalytics({ days, force });
-  sendJson(response, analytics.status === "error" ? 502 : 200, analytics);
+  const selectedPath = (requestUrl.searchParams.get("path") || "").slice(0, 600);
+  const excludeBots = requestUrl.searchParams.get("bots") !== "include";
+  const manifest = JSON.parse(await fs.readFile(path.join(DIST_DIR, "assets", "content-manifest.json"), "utf8"));
+  const [analytics, engagement, notes] = await Promise.all([
+    getCloudflareAnalytics({ days, force, path: selectedPath, excludeBots, documents: manifest.documents, resumePath: "/" + site.resumePath + "/" }),
+    getEngagementAnalytics({ days, path: selectedPath }),
+    analyticsNotes.read()
+  ]);
+  sendJson(response, analytics.status === "error" ? 502 : 200, {
+    ...analytics, engagement, notes, siteUrl: site.siteUrl,
+    ownerExclusion: { offUrl: site.siteUrl + "/?analytics=off", onUrl: site.siteUrl + "/?analytics=on" }
+  });
+}
+
+async function handleAnalyticsNotes(request, response) {
+  if (request.method === "GET") { sendJson(response, 200, { notes: await analyticsNotes.read() }); return; }
+  const allowedOrigins = new Set(["http://127.0.0.1:" + PORT, "http://localhost:" + PORT]);
+  if (!allowedOrigins.has(request.headers.origin) || !request.headers["content-type"]?.startsWith("application/json")) {
+    sendJson(response, 403, { error: "관리자 화면에서만 기록을 변경할 수 있습니다." }); return;
+  }
+  if (!["POST", "DELETE"].includes(request.method)) { sendJson(response, 405, { error: "지원하지 않는 요청입니다." }); return; }
+  try {
+    const chunks = [];
+    let bytes = 0;
+    for await (const chunk of request) {
+      bytes += chunk.length;
+      if (bytes > 8192) throw new Error("기록 요청이 너무 큽니다.");
+      chunks.push(chunk);
+    }
+    const input = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+    const notes = request.method === "POST" ? await analyticsNotes.add(input) : await analyticsNotes.remove(input.id);
+    sendJson(response, 200, { notes });
+  } catch (error) { sendJson(response, 400, { error: error.message }); }
 }
 async function sendAdminStatus(response) {
   try {
@@ -177,6 +212,16 @@ async function sendAdminStatus(response) {
 const server = http.createServer(async (request, response) => {
   const requestUrl = new URL(request.url || "/", "http://" + HOST);
 
+  if (requestUrl.pathname.startsWith("/__admin") && !new Set([HOST + ":" + PORT, "localhost:" + PORT]).has(request.headers.host)) {
+    sendJson(response, 403, { error: "로컬 관리자 주소로 접속해 주세요." }); return;
+  }
+
+  if (requestUrl.pathname === "/__admin/api/analytics-notes") {
+    try { await handleAnalyticsNotes(request, response); }
+    catch { sendJson(response, 500, { error: "제출일 기록을 읽지 못했습니다." }); }
+    return;
+  }
+
   if (requestUrl.pathname === "/__events") {
     response.writeHead(200, {
       "Content-Type": "text/event-stream",
@@ -190,7 +235,8 @@ const server = http.createServer(async (request, response) => {
   }
 
   if (requestUrl.pathname === "/__admin/api/analytics") {
-    await sendAdminAnalytics(response, requestUrl);
+    try { await sendAdminAnalytics(response, requestUrl); }
+    catch { sendJson(response, 500, { status: "error", error: "통계 데이터를 불러오지 못했습니다. 제출일 기록 파일과 빌드 상태를 확인해 주세요." }); }
     return;
   }
 
