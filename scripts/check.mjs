@@ -6,6 +6,7 @@ import site from "../src/config/site.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const dist = path.join(root, "dist");
+const publicDirectory = path.join(root, "public");
 const failures = [];
 
 async function walk(directory) {
@@ -40,9 +41,27 @@ function localTarget(value) {
 const files = await walk(dist);
 if (!(await exists(path.join(dist, ".nojekyll")))) failures.push("dist/.nojekyll이 없습니다.");
 const htmlFiles = files.filter(filePath => path.extname(filePath).toLowerCase() === ".html");
+const googleVerificationFiles = new Set(
+  (await fs.readdir(publicDirectory, { withFileTypes: true }))
+    .filter(entry => entry.isFile() && /^google[0-9a-f]+\.html$/.test(entry.name))
+    .map(entry => entry.name)
+);
+for (const name of googleVerificationFiles) {
+  if (!(await exists(path.join(dist, name)))) failures.push(name + ": Google 소유권 인증 파일이 배포 결과에 없습니다.");
+}
 
 for (const filePath of htmlFiles) {
-  const html = await fs.readFile(filePath, "utf8");
+  const contents = await fs.readFile(filePath);
+  const html = contents.toString("utf8");
+  const relativeHtml = path.relative(dist, filePath);
+  if (googleVerificationFiles.has(relativeHtml)) {
+    const original = await fs.readFile(path.join(publicDirectory, relativeHtml));
+    if (!contents.equals(original)) failures.push(relativeHtml + ": Google 소유권 인증 파일이 원본과 다릅니다.");
+    if (html.trim() !== "google-site-verification: " + relativeHtml) {
+      failures.push(relativeHtml + ": Google 소유권 인증 파일 내용이 파일명과 일치하지 않습니다.");
+    }
+    continue;
+  }
   const attributePattern = /(?:href|src)="([^"]+)"/g;
   let match;
 
@@ -53,7 +72,6 @@ for (const filePath of htmlFiles) {
     }
   }
 
-  const relativeHtml = path.relative(dist, filePath);
   if (!html.includes('<html lang="ko">')) failures.push(relativeHtml + ": HTML 언어 설정이 없습니다.");
   if (!/<title>[^<]+<\/title>/.test(html)) failures.push(relativeHtml + ": title이 없습니다.");
   if (!/<meta name="description" content="[^"]+">/.test(html)) failures.push(relativeHtml + ": description 메타데이터가 없습니다.");
@@ -157,5 +175,6 @@ if (failures.length) {
 }
 
 console.log(
-  "Checked " + htmlFiles.length + " HTML files, internal assets, resume metadata, Cloudflare Analytics, draft exclusion, and admin isolation."
+  "Checked " + (htmlFiles.length - googleVerificationFiles.size) + " site pages, " + googleVerificationFiles.size +
+  " Google verification files, internal assets, resume metadata, Cloudflare Analytics, draft exclusion, and admin isolation."
 );
