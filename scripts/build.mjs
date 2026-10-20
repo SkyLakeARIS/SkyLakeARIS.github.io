@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
+import { createHash } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import matter from "gray-matter";
 import site from "../src/config/site.mjs";
@@ -173,28 +174,38 @@ export async function buildSite(options = {}) {
   await copyDirectory(PUBLIC_DIR, DIST_DIR);
   const siteStyles = await fs.readFile(STYLE_FILE, "utf8");
   const highlightStyles = await fs.readFile(HIGHLIGHT_STYLE_FILE, "utf8");
-  await writeText(
-    path.join(DIST_DIR, "assets", "site.css"),
-    siteStyles.trimEnd() + "\n\n" + highlightStyles.trim() + "\n"
+  const assetContents = new Map([
+    ["site.css", siteStyles.trimEnd() + "\n\n" + highlightStyles.trim() + "\n"],
+    ["site.js", await fs.readFile(SCRIPT_FILE, "utf8")],
+    ["analytics.js", await fs.readFile(new URL("../src/scripts/analytics.js", import.meta.url), "utf8")]
+  ]);
+  const assetUrls = new Map();
+  for (const [name, contents] of assetContents) {
+    await writeText(path.join(DIST_DIR, "assets", name), contents);
+    const version = createHash("sha256").update(contents).digest("hex").slice(0, 12);
+    assetUrls.set("/assets/" + name, "/assets/" + name + "?v=" + version);
+  }
+  const versionPage = html => html.replace(
+    /\b(href|src)="(\/assets\/(?:site\.css|site\.js|analytics\.js))"/g,
+    (_match, attribute, asset) => attribute + '="' + assetUrls.get(asset) + '"'
   );
-  await writeText(path.join(DIST_DIR, "assets", "site.js"), await fs.readFile(SCRIPT_FILE, "utf8"));
-  await writeText(path.join(DIST_DIR, "assets", "analytics.js"), await fs.readFile(new URL("../src/scripts/analytics.js", import.meta.url), "utf8"));
+  const publishPage = (url, html) => writePage(url, versionPage(html));
   await writeText(path.join(DIST_DIR, ".nojekyll"), "");
 
   const pinnedRepositories = JSON.parse(await fs.readFile(PINNED_FILE, "utf8"));
 
-  await writePage("/", homeHtml(visibleDocuments, pinnedRepositories, false, analyticsEnabled));
-  await writePage("/" + site.resumePath + "/", homeHtml(visibleDocuments, pinnedRepositories, true, analyticsEnabled));
-  await writePage("/docs/", docsIndexHtml(visibleDocuments, analyticsEnabled));
+  await publishPage("/", homeHtml(visibleDocuments, pinnedRepositories, false, analyticsEnabled));
+  await publishPage("/" + site.resumePath + "/", homeHtml(visibleDocuments, pinnedRepositories, true, analyticsEnabled));
+  await publishPage("/docs/", docsIndexHtml(visibleDocuments, analyticsEnabled));
 
   for (let index = 0; index < visibleDocuments.length; index += 1) {
     const document = visibleDocuments[index];
     const previous = visibleDocuments[index - 1] || null;
     const next = visibleDocuments[index + 1] || null;
-    await writePage(document.url, articleHtml(document, visibleDocuments, previous, next, analyticsEnabled));
+    await publishPage(document.url, articleHtml(document, visibleDocuments, previous, next, analyticsEnabled));
   }
 
-  await writeText(path.join(DIST_DIR, "404.html"), notFoundHtml(analyticsEnabled));
+  await writeText(path.join(DIST_DIR, "404.html"), versionPage(notFoundHtml(analyticsEnabled)));
   await buildSearchIndex(visibleDocuments);
   await buildSitemap(visibleDocuments);
 

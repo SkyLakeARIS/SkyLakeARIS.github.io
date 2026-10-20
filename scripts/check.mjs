@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
+import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import site from "../src/config/site.mjs";
 
@@ -41,6 +42,12 @@ function localTarget(value) {
 const files = await walk(dist);
 if (!(await exists(path.join(dist, ".nojekyll")))) failures.push("dist/.nojekyll이 없습니다.");
 const htmlFiles = files.filter(filePath => path.extname(filePath).toLowerCase() === ".html");
+const versionedAssets = new Map();
+for (const name of ["site.css", "site.js", "analytics.js"]) {
+  const contents = await fs.readFile(path.join(dist, "assets", name));
+  const version = createHash("sha256").update(contents).digest("hex").slice(0, 12);
+  versionedAssets.set(name, "/assets/" + name + "?v=" + version);
+}
 const googleVerificationFiles = new Set(
   (await fs.readdir(publicDirectory, { withFileTypes: true }))
     .filter(entry => entry.isFile() && /^google[0-9a-f]+\.html$/.test(entry.name))
@@ -61,6 +68,12 @@ for (const filePath of htmlFiles) {
       failures.push(relativeHtml + ": Google 소유권 인증 파일 내용이 파일명과 일치하지 않습니다.");
     }
     continue;
+  }
+  for (const [name, url] of versionedAssets) {
+    const attribute = name.endsWith(".css") ? "href" : "src";
+    if (!html.includes(attribute + '="' + url + '"')) {
+      failures.push(relativeHtml + ": " + name + "의 캐시 버전이 파일 내용과 일치하지 않습니다.");
+    }
   }
   const attributePattern = /(?:href|src)="([^"]+)"/g;
   let match;
@@ -88,7 +101,7 @@ for (const filePath of htmlFiles) {
   }
 
   const analyticsMatches = html.match(/id="site-analytics-config"/g) || [];
-  if (analyticsMatches.length !== 1 || !html.includes('src="/assets/analytics.js"')) {
+  if (analyticsMatches.length !== 1 || !html.includes('src="' + versionedAssets.get("analytics.js") + '"')) {
     failures.push(relativeHtml + ": 본인 방문 제외를 지원하는 통계 로더가 정확히 한 번 포함되지 않았습니다.");
   }
   if (html.includes('src="https://static.cloudflareinsights.com/beacon.min.js"')) {
